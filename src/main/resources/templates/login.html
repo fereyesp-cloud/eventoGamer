@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Gamer - Iniciar sesión</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="auth-page">
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fa-solid fa-gamepad" aria-hidden="true"></i>
+            <h2>PLAYER LOGIN</h2>
+            <p>Ingresa tus credenciales de jugador</p>
+        </div>
+
+        <!-- Mensajes de estado -->
+        <div th:if="${param.error}" class="alert alert-error" role="alert">
+            Usuario o contraseña incorrectos.
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success" role="status">
+            Sesión cerrada correctamente.
+        </div>
+
+        <form th:action="@{/login}" method="post">
+          <div>
+            <label>Usuario:
+                <input type="text" name="username" autocomplete="username" required>
+            </label>
+          </div>
+          <div>
+            <label>Contraseña:
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+          </div>
+
+          <button type="submit">INGRESAR</button>
+        </form>
+        <div class="login-footer">
+            <p>¿No tienes una cuenta? <a th:href="@{/registro}">Regístrate aquí</a></p>
+            <p><a th:href="@{/}">Volver al inicio</a></p>
+        </div>
+    </div>
+</body>
+</html>
