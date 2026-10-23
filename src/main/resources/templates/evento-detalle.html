@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${evento.nombre} + ' - Eventos Gamer'">Detalle</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <a th:href="@{/eventos}">← Volver a eventos</a>
+
+    <h1 th:text="${evento.nombre}">Nombre</h1>
+    <p th:text="${evento.descripcion}"></p>
+
+    <p><strong>Categoría:</strong> <span th:text="${evento.categoria}"></span></p>
+    <p><strong>Fecha:</strong> <span th:text="${#temporals.format(evento.fecha, 'dd-MM-yyyy')}"></span></p>
+    <p><strong>Hora:</strong> <span th:text="${#temporals.format(evento.hora, 'HH:mm')}"></span> hrs</p>
+    <p><strong>Dirección:</strong> <span th:text="${evento.direccion}"></span></p>
+
+    <h2>Organizadores</h2>
+    <ul><li th:each="o : ${evento.organizadores}" th:text="${o}"></li></ul>
+
+    <h2>Principales expositores</h2>
+    <ul><li th:each="x : ${evento.expositores}" th:text="${x}"></li></ul>
+
+    <h2>Servicios disponibles</h2>
+    <ul>
+        <li th:text="'Estacionamiento: ' + (${evento.estacionamiento} ? 'Sí' : 'No')"></li>
+        <li th:text="'Locomoción colectiva: ' + (${evento.locomocionColectiva} ? 'Sí' : 'No')"></li>
+        <li th:text="'Servicio de comida: ' + (${evento.servicioComida} ? 'Sí' : 'No')"></li>
+        <li th:text="'Alojamiento: ' + (${evento.alojamiento} ? 'Sí' : 'No')"></li>
+    </ul>
+</body>
+</html>
