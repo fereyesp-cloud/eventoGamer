@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Eventos Gamer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="auth-page">
+    <div class="registro-container">
+        <div class="registro-header">
+            <i class="fa-solid fa-gamepad" aria-hidden="true"></i>
+            <h1>REGISTRO - PLAYER</h1>
+        </div>
+
+        <form th:action="@{/registro}" th:object="${registroForm}" method="post" novalidate>
+            <div>
+                <label for="nombre">Nombre</label>
+                <input type="text" th:field="*{nombre}" autocomplete="name" required>
+                <span class="error" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></span>
+            </div>
+
+            <div>
+                <label for="correo">Correo electrónico</label>
+                <input type="email" th:field="*{correo}" autocomplete="email" required>
+                <span class="error" th:if="${#fields.hasErrors('correo')}" th:errors="*{correo}"></span>
+            </div>
+
+            <div>
+                <label for="usuario">Usuario</label>
+                <input type="text" th:field="*{usuario}" autocomplete="username" required>
+                <span class="error" th:if="${#fields.hasErrors('usuario')}" th:errors="*{usuario}"></span>
+            </div>
+
+            <div>
+                <label for="contrasena">Contraseña</label>
+                <input type="password" th:field="*{contrasena}" autocomplete="new-password" required>
+                <span class="error" th:if="${#fields.hasErrors('contrasena')}" th:errors="*{contrasena}"></span>
+            </div>
+
+            <div>
+                <label for="repetirContrasena">Repetir contraseña</label>
+                <input type="password" th:field="*{repetirContrasena}" autocomplete="new-password" required>
+                <span class="error" th:if="${#fields.hasErrors('repetirContrasena')}" th:errors="*{repetirContrasena}"></span>
+            </div>
+
+            <button type="submit">REGISTRAR</button>
+        </form>
+
+        <p>¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a></p>
+        <p><a th:href="@{/}">Volver al inicio</a></p>
+    </div>
+</body>
+</html>

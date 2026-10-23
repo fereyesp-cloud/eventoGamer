@@ -6,7 +6,44 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <h1>Eventos Gamer</h1>
-    <a th:href="@{/login}">Iniciar sesión</a>
+    <header>
+        <h1>Eventos Gamer</h1>
+        <nav>
+            <a th:href="@{/login}">Iniciar sesión</a>
+            <a th:href="@{/registro}">Registrarse</a>
+        </nav>
+    </header>
+
+    <section>
+        <h2>Eventos destacados</h2>
+        <p th:if="${#lists.isEmpty(destacados)}">No hay eventos destacados por ahora.</p>
+        <ul>
+            <li th:each="e : ${destacados}">
+                <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
+                - <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
+                - <span th:text="${e.ubicacion}"></span>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Próximos eventos</h2>
+        <p th:if="${#lists.isEmpty(proximos)}">No hay eventos próximos.</p>
+        <ul>
+            <li th:each="e : ${proximos}">
+                <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
+                - <span th:text="${e.categoria}"></span>
+                - <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
+                - <span th:text="${e.ubicacion}"></span>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Marcas asociadas</h2>
+        <ul>
+            <li th:each="m : ${marcas}" th:text="${m}">Marca</li>
+        </ul>
+    </section>
 </body>
 </html>
