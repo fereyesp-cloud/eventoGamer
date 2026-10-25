@@ -11,18 +11,22 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import duoc.eventogamer.service.PerfilService;
 
 @Controller
 public class RegistroController {
 
     private final InMemoryUserDetailsManager userDetailsManager;
     private final PasswordEncoder passwordEncoder;
+    private final PerfilService perfilService;
 
     public RegistroController(InMemoryUserDetailsManager userDetailsManager,
-                              PasswordEncoder passwordEncoder) {
-        this.userDetailsManager = userDetailsManager;
-        this.passwordEncoder = passwordEncoder;
-    }
+                          PasswordEncoder passwordEncoder,
+                          PerfilService perfilService) {
+    this.userDetailsManager = userDetailsManager;
+    this.passwordEncoder = passwordEncoder;
+    this.perfilService = perfilService;
+}
 
     @GetMapping("/registro")
     public String mostrarRegistro(Model model) {
@@ -53,6 +57,8 @@ public class RegistroController {
                 .roles("USER")
                 .build()
         );
+
+        perfilService.crear(form.getUsuario(), form.getNombre(), form.getCorreo());
 
         return "redirect:/login?registrado";
     }
