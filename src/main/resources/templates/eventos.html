@@ -7,8 +7,12 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <header>
-        <a th:href="@{/}">Inicio</a>
+    <header th:replace="~{fragments/header :: header}">
+        <nav>
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/eventos}">Eventos</a>
+            <a th:href="@{/perfil}">Mi perfil</a>
+        </nav>
         <span>Hola, <span sec:authentication="name">usuario</span></span>
         <form th:action="@{/logout}" method="post">
             <button type="submit">Cerrar sesión</button>
@@ -16,8 +20,8 @@
     </header>
 
     <h1>Eventos</h1>
-
-    <form th:action="@{/eventos}" method="get">
+    <main>
+        <form th:action="@{/eventos}" method="get" class="filtros">
         <label>Categoría:
             <select name="categoria">
                 <option value="">Todas</option>
@@ -41,7 +45,7 @@
 
     <p th:if="${#lists.isEmpty(eventos)}">No se encontraron eventos con esos filtros.</p>
 
-    <ul>
+    <ul class="lista-eventos">
         <li th:each="e : ${eventos}">
             <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
             - <span th:text="${e.categoria}"></span>
@@ -49,5 +53,6 @@
             - <span th:text="${e.ubicacion}"></span>
         </li>
     </ul>
+    </main>
 </body>
 </html>

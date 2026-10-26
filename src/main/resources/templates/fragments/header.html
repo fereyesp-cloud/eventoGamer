@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header th:fragment="header" class="site-header">
+    <a th:href="@{/}" class="logo">🎮 Eventos Gamer</a>
+
+    <nav class="site-nav">
+        <a th:href="@{/}">Inicio</a>
+        <a sec:authorize="isAuthenticated()" th:href="@{/eventos}">Eventos</a>
+        <a sec:authorize="isAuthenticated()" th:href="@{/perfil}">Mi perfil</a>
+    </nav>
+
+    <div class="user-area">
+        <!-- Visitante sin sesión -->
+        <th:block sec:authorize="isAnonymous()">
+            <a th:href="@{/login}" class="btn btn-secondary">Iniciar sesión</a>
+            <a th:href="@{/registro}" class="btn">Registrarse</a>
+        </th:block>
+
+        <!-- Usuario autenticado -->
+        <th:block sec:authorize="isAuthenticated()">
+            <span>Hola, <strong sec:authentication="name">usuario</strong></span>
+            <form th:action="@{/logout}" method="post" class="logout-form">
+                <button type="submit" class="btn btn-secondary">Cerrar sesión</button>
+            </form>
+        </th:block>
+    </div>
+</header>
+</body>
+</html>

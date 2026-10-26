@@ -8,7 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <header>
+    <header th:replace="~{fragments/header :: header}">
         <nav>
             <a th:href="@{/}">Inicio</a>
             <a th:href="@{/eventos}">Eventos</a>
@@ -20,7 +20,7 @@
         </form>
     </header>
 
-    <main>
+    <main class="container">
         <h1>Mi perfil</h1>
 
         <div th:if="${param.guardado}" class="alert alert-success" role="status">
