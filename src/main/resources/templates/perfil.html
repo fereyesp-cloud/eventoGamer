@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi perfil - Eventos Gamer</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}">
+        <nav>
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/eventos}">Eventos</a>
+            <a th:href="@{/perfil}">Mi perfil</a>
+        </nav>
+        <span>Hola, <span sec:authentication="name">usuario</span></span>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    </header>
+
+    <main class="container">
+        <h1>Mi perfil</h1>
+
+        <div th:if="${param.guardado}" class="alert alert-success" role="status">
+            Perfil guardado correctamente.
+        </div>
+
+        <div class="contenedor-datos">
+            <p>Usuario: <span th:text="${perfil.username}"></span></p>
+            <p>Nombre: <span th:text="${perfil.nombre} ?: 'No registrado'"></span></p>
+            <p>Correo: <span th:text="${perfil.correo} ?: 'No registrado'"></span></p>
+        </div>
+
+        <form th:action="@{/perfil}" th:object="${perfilForm}" method="post" novalidate>
+
+            <div>
+                <label for="gamertag">Nombre de usuario (gamertag)</label>
+                <input type="text" th:field="*{gamertag}" required>
+                <span class="error" th:if="${#fields.hasErrors('gamertag')}" th:errors="*{gamertag}"></span>
+            </div>
+
+            <fieldset class="contenedor-avatar">
+                <legend>Avatar</legend>
+                <label th:each="a : ${avatares}">
+                    <input type="radio" th:field="*{avatar}" th:value="${a}">
+                    <span th:text="${a}"></span>
+                </label>
+                <span class="error" th:if="${#fields.hasErrors('avatar')}" th:errors="*{avatar}"></span>
+            </fieldset>
+
+            <fieldset class="contenedor-juegos">
+                <legend>Juegos de interés</legend>
+                <label th:each="j : ${juegos}">
+                    <input type="checkbox" th:field="*{juegos}" th:value="${j}">
+                    <span th:text="${j}"></span>
+                </label>
+                <span class="error" th:if="${#fields.hasErrors('juegos')}" th:errors="*{juegos}"></span>
+            </fieldset>
+
+            <fieldset class="contenedor-notificaciones">
+                <legend>Notificaciones</legend>
+                <label><input type="checkbox" th:field="*{notifNuevosEventos}"> Nuevos eventos publicados</label>
+                <label><input type="checkbox" th:field="*{notifRecordatorios}"> Recordatorios de eventos</label>
+                <label><input type="checkbox" th:field="*{notifCorreo}"> Recibir notificaciones por correo</label>
+            </fieldset>
+
+            <button type="submit">Guardar perfil</button>
+        </form>
+    </main>
+</body>
+</html>
