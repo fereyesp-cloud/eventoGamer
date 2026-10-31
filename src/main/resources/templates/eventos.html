@@ -3,56 +3,101 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Eventos - Eventos Gamer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Eventos - Eventos Gamer</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <header th:replace="~{fragments/header :: header}">
-        <nav>
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/eventos}">Eventos</a>
-            <a th:href="@{/perfil}">Mi perfil</a>
-        </nav>
-        <span>Hola, <span sec:authentication="name">usuario</span></span>
-        <form th:action="@{/logout}" method="post">
-            <button type="submit">Cerrar sesión</button>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container">
+        <h1>Búsqueda de Eventos Gamer</h1>
+        <p class="lead">Explora y filtra los eventos más destacados de la comunidad presencial y online.</p>
+
+        <form th:action="@{/eventos}" method="get" class="filtros filtros-avanzados">
+            <div>
+                <label for="nombre">Nombre del evento:</label>
+                <input type="text" id="nombre" name="nombre" th:value="${nombreSel}" placeholder="Ej. Torneo Valorant...">
+            </div>
+
+            <div>
+                <label for="videojuego">Videojuego:</label>
+                <input type="text" id="videojuego" name="videojuego" th:value="${videojuegoSel}" placeholder="Ej. Valorant, LoL, SF6...">
+            </div>
+
+            <div>
+                <label for="categoria">Tipo o Categoría:</label>
+                <select id="categoria" name="categoria">
+                    <option value="">Todas las categorías</option>
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}"
+                            th:selected="${c == categoriaSel}"></option>
+                </select>
+            </div>
+
+            <div>
+                <label for="paisCiudad">País o Ciudad:</label>
+                <input type="text" id="paisCiudad" name="paisCiudad" th:value="${paisCiudadSel}" placeholder="Ej. Santiago, Chile, Valparaíso...">
+            </div>
+
+            <div>
+                <label for="fecha">Fecha:</label>
+                <input type="date" id="fecha" name="fecha" th:value="${fechaSel}">
+            </div>
+
+            <div>
+                <label for="modalidad">Modalidad:</label>
+                <select id="modalidad" name="modalidad">
+                    <option value="">Todas las modalidades</option>
+                    <option th:each="m : ${modalidades}" th:value="${m}" th:text="${m}"
+                            th:selected="${m == modalidadSel}"></option>
+                </select>
+            </div>
+
+            <div class="botones-filtro">
+                <button type="submit" class="btn">Buscar Eventos</button>
+                <a th:href="@{/eventos}" class="btn btn-secondary">Limpiar Filtros</a>
+            </div>
         </form>
-    </header>
 
-    <h1>Eventos</h1>
-    <main>
-        <form th:action="@{/eventos}" method="get" class="filtros">
-        <label>Categoría:
-            <select name="categoria">
-                <option value="">Todas</option>
-                <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}"
-                        th:selected="${c == categoriaSel}"></option>
-            </select>
-        </label>
-        <label>Fecha:
-            <input type="date" name="fecha" th:value="${fechaSel}">
-        </label>
-        <label>Ubicación:
-            <select name="ubicacion">
-                <option value="">Todas</option>
-                <option th:each="u : ${ubicaciones}" th:value="${u}" th:text="${u}"
-                        th:selected="${u == ubicacionSel}"></option>
-            </select>
-        </label>
-        <button type="submit">Buscar</button>
-        <a th:href="@{/eventos}">Limpiar</a>
-    </form>
+        <div th:if="${#lists.isEmpty(eventos)}" class="alert alert-error">
+            No se encontraron eventos con los filtros seleccionados. Intenta ajustar tu búsqueda.
+        </div>
 
-    <p th:if="${#lists.isEmpty(eventos)}">No se encontraron eventos con esos filtros.</p>
+        <section class="seccion-resultados" th:if="${not #lists.isEmpty(eventos)}">
+            <h2>Resultados encontrados (<span th:text="${#lists.size(eventos)}"></span>)</h2>
 
-    <ul class="lista-eventos">
-        <li th:each="e : ${eventos}">
-            <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
-            - <span th:text="${e.categoria}"></span>
-            - <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
-            - <span th:text="${e.ubicacion}"></span>
-        </li>
-    </ul>
+            <div class="grid-eventos">
+                <article th:each="e : ${eventos}" class="card-evento">
+                    <div class="card-badges">
+                        <span class="badge badge-modalidad" th:text="${e.modalidad}">Presencial</span>
+                        <span class="badge badge-categoria" th:text="${e.categoria}">Torneo</span>
+                    </div>
+
+                    <h3 class="card-titulo">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Nombre del Evento</a>
+                    </h3>
+
+                    <p class="card-juego">
+                        🎮 <strong>Juego:</strong> <span th:text="${e.videojuego}">Juego</span>
+                    </p>
+
+                    <p class="card-dato">
+                        📅 <strong>Fecha:</strong> <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
+                        - ⏰ <span th:text="${#temporals.format(e.hora, 'HH:mm')}"></span> hrs
+                    </p>
+
+                    <p class="card-dato">
+                        📍 <strong>Ubicación:</strong> <span th:text="${e.pais} + ' (' + ${e.ciudad} + ')'"></span>
+                    </p>
+
+                    <div class="card-footer">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" class="btn btn-ver-detalle">
+                            Ver Detalle Completo →
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </section>
     </main>
 </body>
 </html>

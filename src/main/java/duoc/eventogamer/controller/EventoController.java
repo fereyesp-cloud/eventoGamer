@@ -1,5 +1,6 @@
 package duoc.eventogamer.controller;
 
+import duoc.eventogamer.dto.EventoResumenDTO;
 import duoc.eventogamer.model.Evento;
 import duoc.eventogamer.service.EventoService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Controller
 public class EventoController {
@@ -22,21 +24,43 @@ public class EventoController {
         this.eventoService = eventoService;
     }
 
+    /**
+     * [Pública] Búsqueda y listado de eventos con todos los filtros solicitados:
+     * nombre, videojuego, tipo o categoría, país o ciudad, fecha y modalidad.
+     */
     @GetMapping("/eventos")
-    public String listar(@RequestParam(required = false) String categoria,
+    public String listar(@RequestParam(required = false) String nombre,
+                         @RequestParam(required = false) String videojuego,
+                         @RequestParam(required = false) String categoria,
+                         @RequestParam(required = false) String paisCiudad,
                          @RequestParam(required = false)
                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
-                         @RequestParam(required = false) String ubicacion,
+                         @RequestParam(required = false) String modalidad,
                          Model model) {
-        model.addAttribute("eventos", eventoService.buscar(categoria, fecha, ubicacion));
+
+        List<EventoResumenDTO> eventos = eventoService.buscarAvanzado(
+                nombre, videojuego, categoria, paisCiudad, fecha, modalidad
+        );
+
+        model.addAttribute("eventos", eventos);
         model.addAttribute("categorias", eventoService.categorias());
+        model.addAttribute("videojuegos", eventoService.videojuegos());
+        model.addAttribute("modalidades", eventoService.modalidades());
         model.addAttribute("ubicaciones", eventoService.ubicaciones());
+
+        model.addAttribute("nombreSel", nombre);
+        model.addAttribute("videojuegoSel", videojuego);
         model.addAttribute("categoriaSel", categoria);
+        model.addAttribute("paisCiudadSel", paisCiudad);
         model.addAttribute("fechaSel", fecha);
-        model.addAttribute("ubicacionSel", ubicacion);
+        model.addAttribute("modalidadSel", modalidad);
+
         return "eventos";
     }
 
+    /**
+     * [Privada] Detalle del evento en vista web
+     */
     @GetMapping("/eventos/{id}")
     public String detalle(@PathVariable Long id, Model model) {
         Evento evento = eventoService.buscarPorId(id)

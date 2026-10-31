@@ -1,54 +1,81 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Eventos Gamer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos Gamer - Portal Oficial</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <header th:replace="~{fragments/header :: header}">
-        <nav>
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/eventos}">Eventos</a>
-            <a th:href="@{/perfil}">Mi perfil</a>
-        </nav>
-        <span>Hola, <span sec:authentication="name">usuario</span></span>
-        <form th:action="@{/logout}" method="post">
-            <button type="submit">Cerrar sesión</button>
-        </form>
-    </header>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <main class="container">
-    <section>
-        <h2>Eventos destacados</h2>
-        <p th:if="${#lists.isEmpty(destacados)}">No hay eventos destacados por ahora.</p>
-        <ul class="lista-eventos">
-            <li th:each="e : ${destacados}">
-                <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
-                - <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
-                - <span th:text="${e.ubicacion}"></span>
-            </li>
-        </ul>
-    </section>
+        <!-- Banner Hero con acceso rápido a login y búsqueda -->
+        <section class="hero-gamer">
+            <h1>LA PLATAFORMA DE EVENTOS GAMER</h1>
+            <p class="lead">Entérate de los mejores torneos, LAN parties, meetups y exposiciones gamer de Chile y el mundo.</p>
+            <div class="hero-actions">
+                <a th:href="@{/eventos}" class="btn">Explorar Eventos</a>
+                <th:block sec:authorize="isAnonymous()">
+                    <a th:href="@{/login}" class="btn btn-secondary">Iniciar Sesión (Jugador)</a>
+                </th:block>
+            </div>
+        </section>
 
-    <section>
-        <h2>Próximos eventos</h2>
-        <p th:if="${#lists.isEmpty(proximos)}">No hay eventos próximos.</p>
-        <ul class="lista-eventos">
-            <li th:each="e : ${proximos}">
-                <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Evento</a>
-                - <span th:text="${e.categoria}"></span>
-                - <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span>
-                - <span th:text="${e.ubicacion}"></span>
-            </li>
-        </ul>
-    </section>
+        <!-- Banners de avisos comerciales -->
+        <section class="seccion-banners">
+            <h2>Marcas asociadas y avisos comerciales</h2>
+            <ul class="lista-marcas">
+                <li th:each="b : ${banners}" th:text="${b}">Aviso Comercial</li>
+            </ul>
+        </section>
 
-    <section>
-        <h2>Marcas asociadas</h2>
-        <ul class="lista-marcas">
-            <li th:each="m : ${marcas}" th:text="${m}">Marca</li>
-        </ul>
-    </section>
+        <!-- Eventos más populares -->
+        <section class="seccion-inicio">
+            <h2>Eventos más populares</h2>
+            <p th:if="${#lists.isEmpty(populares)}">No hay eventos destacados por ahora.</p>
+            <div class="grid-eventos" th:if="${not #lists.isEmpty(populares)}">
+                <article th:each="e : ${populares}" class="card-evento">
+                    <div class="card-badges">
+                        <span class="badge badge-modalidad" th:text="${e.modalidad}">Modalidad</span>
+                        <span class="badge badge-categoria" th:text="${e.categoria}">Categoría</span>
+                    </div>
+                    <h3 class="card-titulo">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Nombre</a>
+                    </h3>
+                    <p class="card-juego">🎮 <strong th:text="${e.videojuego}">Juego</strong></p>
+                    <p class="card-dato">📅 <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span></p>
+                    <p class="card-dato">📍 <span th:text="${e.pais} + ' (' + ${e.ciudad} + ')'"></span></p>
+                    <div class="card-footer">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" class="btn btn-ver-detalle">Ver Detalle</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Eventos más recientes -->
+        <section class="seccion-inicio">
+            <h2>Eventos más recientes publicados</h2>
+            <p th:if="${#lists.isEmpty(recientes)}">No hay eventos recientes publicados.</p>
+            <div class="grid-eventos" th:if="${not #lists.isEmpty(recientes)}">
+                <article th:each="e : ${recientes}" class="card-evento">
+                    <div class="card-badges">
+                        <span class="badge badge-modalidad" th:text="${e.modalidad}">Modalidad</span>
+                        <span class="badge badge-categoria" th:text="${e.categoria}">Categoría</span>
+                    </div>
+                    <h3 class="card-titulo">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" th:text="${e.nombre}">Nombre</a>
+                    </h3>
+                    <p class="card-juego">🎮 <strong th:text="${e.videojuego}">Juego</strong></p>
+                    <p class="card-dato">📅 <span th:text="${#temporals.format(e.fecha, 'dd-MM-yyyy')}"></span></p>
+                    <p class="card-dato">📍 <span th:text="${e.pais} + ' (' + ${e.ciudad} + ')'"></span></p>
+                    <div class="card-footer">
+                        <a th:href="@{/eventos/{id}(id=${e.id})}" class="btn btn-ver-detalle">Ver Detalle</a>
+                    </div>
+                </article>
+            </div>
+        </section>
     </main>
 </body>
 </html>
