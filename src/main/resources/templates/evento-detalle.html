@@ -1,48 +1,82 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${evento.nombre} + ' - Eventos Gamer'">Detalle</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <header th:replace="~{fragments/header :: header}">
-        <nav>
-            <a th:href="@{/}">Inicio</a>
-            <a th:href="@{/eventos}">Eventos</a>
-            <a th:href="@{/perfil}">Mi perfil</a>
-        </nav>
-        <span>Hola, <span sec:authentication="name">usuario</span></span>
-        <form th:action="@{/logout}" method="post">
-            <button type="submit">Cerrar sesión</button>
-        </form>
-    </header>
+    <header th:replace="~{fragments/header :: header}"></header>
 
     <main class="container">
         <a th:href="@{/eventos}" class="volver">← Volver a eventos</a>
 
-        <h1 th:text="${evento.nombre}">Nombre</h1>
-        <p th:text="${evento.descripcion}"></p>
+        <div class="detalle-header">
+            <span class="badge badge-modalidad" th:text="${evento.modalidad}">Modalidad</span>
+            <span class="badge badge-juego" th:text="${evento.videojuego}">Videojuego</span>
+            <span class="badge badge-categoria" th:text="${evento.categoria}">Categoría</span>
+        </div>
 
-        <p><strong>Categoría:</strong> <span th:text="${evento.categoria}"></span></p>
-        <p><strong>Fecha:</strong> <span th:text="${#temporals.format(evento.fecha, 'dd-MM-yyyy')}"></span></p>
-        <p><strong>Hora:</strong> <span th:text="${#temporals.format(evento.hora, 'HH:mm')}"></span> hrs</p>
-        <p><strong>Dirección:</strong> <span th:text="${evento.direccion}"></span></p>
+        <h1 th:text="${evento.nombre}">Nombre del Evento</h1>
+        <p class="lead" th:text="${evento.descripcion}">Descripción del evento</p>
 
-        <h2>Organizadores</h2>
-        <ul><li th:each="o : ${evento.organizadores}" th:text="${o}"></li></ul>
+        <section class="detalle-seccion">
+            <h2>Información general</h2>
+            <ul class="datos-evento">
+                <li><strong>Videojuego:</strong> <span th:text="${evento.videojuego}"></span></li>
+                <li><strong>Categoría:</strong> <span th:text="${evento.categoria}"></span></li>
+                <li><strong>Modalidad:</strong> <span th:text="${evento.modalidad}"></span></li>
+                <li><strong>Fecha:</strong> <span th:text="${#temporals.format(evento.fecha, 'dd-MM-yyyy')}"></span></li>
+                <li><strong>Hora:</strong> <span th:text="${#temporals.format(evento.hora, 'HH:mm')}"></span> hrs</li>
+                <li><strong>País / Ciudad:</strong> <span th:text="${evento.pais} + ' - ' + ${evento.ciudad}"></span></li>
+                <li th:if="${evento.direccion != null}">
+                    <strong>Ubicación:</strong> <span th:text="${evento.direccion}"></span>
+                </li>
+                <li th:if="${evento.enlaceAcceso != null}">
+                    <strong>Enlace de acceso:</strong>
+                    <a th:href="${evento.enlaceAcceso}" th:text="${evento.enlaceAcceso}" target="_blank" rel="noopener noreferrer"></a>
+                </li>
+                <li><strong>Organizador:</strong> <span th:text="${evento.organizador}"></span></li>
+            </ul>
+        </section>
 
-        <h2>Principales expositores</h2>
-        <ul><li th:each="x : ${evento.expositores}" th:text="${x}"></li></ul>
+        <section class="detalle-seccion" th:if="${evento.requisitosParticipacion != null}">
+            <h2>Requisitos de participación</h2>
+            <p th:text="${evento.requisitosParticipacion}"></p>
+        </section>
 
-        <h2>Servicios disponibles</h2>
-        <ul>
-            <li th:text="'Estacionamiento: ' + (${evento.estacionamiento} ? 'Sí' : 'No')"></li>
-            <li th:text="'Locomoción colectiva: ' + (${evento.locomocionColectiva} ? 'Sí' : 'No')"></li>
-            <li th:text="'Servicio de comida: ' + (${evento.servicioComida} ? 'Sí' : 'No')"></li>
-            <li th:text="'Alojamiento: ' + (${evento.alojamiento} ? 'Sí' : 'No')"></li>
-        </ul>
+        <section class="detalle-seccion" th:if="${evento.informacionInscripcion != null}">
+            <h2>Información de inscripción</h2>
+            <p th:text="${evento.informacionInscripcion}"></p>
+        </section>
+
+        <section class="detalle-seccion" th:if="${not #lists.isEmpty(evento.fotografias)}">
+            <h2>Fotografías del evento</h2>
+            <div class="galeria-fotos">
+                <div th:each="foto : ${evento.fotografias}" class="foto-card">
+                    <img th:src="@{${foto}}" alt="Fotografía del evento" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22><rect width=%22100%%22 height=%22100%%22 fill=%22%23161629%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2300e5ff%22 font-family=%22sans-serif%22 font-size=%2220%22>🎮 Foto Gamer</text></svg>'">
+                </div>
+            </div>
+        </section>
+
+        <section class="detalle-seccion" th:if="${not #lists.isEmpty(evento.organizadores)}">
+            <h2>Organizadores y Patrocinadores</h2>
+            <ul>
+                <li th:each="o : ${evento.organizadores}" th:text="${o}"></li>
+            </ul>
+        </section>
+
+        <section class="detalle-seccion">
+            <h2>Servicios disponibles</h2>
+            <ul>
+                <li th:text="'Estacionamiento: ' + (${evento.estacionamiento} ? 'Sí' : 'No')"></li>
+                <li th:text="'Locomoción colectiva: ' + (${evento.locomocionColectiva} ? 'Sí' : 'No')"></li>
+                <li th:text="'Servicio de comida: ' + (${evento.servicioComida} ? 'Sí' : 'No')"></li>
+                <li th:text="'Alojamiento: ' + (${evento.alojamiento} ? 'Sí' : 'No')"></li>
+            </ul>
+        </section>
     </main>
-    
 </body>
 </html>

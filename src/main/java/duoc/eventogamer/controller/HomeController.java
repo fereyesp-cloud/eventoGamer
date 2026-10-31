@@ -5,8 +5,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.List;
-
 @Controller
 public class HomeController {
 
@@ -18,13 +16,15 @@ public class HomeController {
 
     @GetMapping("/")
     public String inicio(Model model) {
+        // Nuevos atributos según rúbrica: más recientes, populares y avisos comerciales
+        model.addAttribute("recientes", eventoService.obtenerRecientes());
+        model.addAttribute("populares", eventoService.obtenerPopulares());
+        model.addAttribute("banners", eventoService.obtenerBanners());
+
+        // Compatibilidad hacia atrás
         model.addAttribute("proximos", eventoService.proximos());
         model.addAttribute("destacados", eventoService.destacados());
-        model.addAttribute("marcas", List.of(
-            "HyperGear - Periféricos gamer",
-            "NovaChair - Sillas ergonómicas",
-            "PixelNet - Internet fibra para gamers"
-        ));
+        model.addAttribute("marcas", eventoService.obtenerBanners());
         return "index";
     }
 }
