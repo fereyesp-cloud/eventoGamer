@@ -125,11 +125,11 @@ public class Evento {
         this.direccion = direccion;
         this.enlaceAcceso = enlaceAcceso;
         this.organizador = organizador;
-        this.organizadores = organizadores != null ? organizadores : new ArrayList<>();
-        this.expositores = expositores != null ? expositores : new ArrayList<>();
+        this.organizadores = organizadores != null ? new ArrayList<>(organizadores) : new ArrayList<>();
+        this.expositores = expositores != null ? new ArrayList<>(expositores) : new ArrayList<>();
         this.requisitosParticipacion = requisitosParticipacion;
         this.informacionInscripcion = informacionInscripcion;
-        this.fotografias = fotografias != null ? fotografias : new ArrayList<>();
+        this.fotografias = fotografias != null ? new ArrayList<>(fotografias) : new ArrayList<>();
         this.fotoPrincipal = fotoPrincipal;
         this.estacionamiento = estacionamiento;
         this.locomocionColectiva = locomocionColectiva;
@@ -156,7 +156,7 @@ public class Evento {
         );
     }
 
-    public EventoDetalleDTO toDetalleDTO() {
+        public EventoDetalleDTO toDetalleDTO() {
         return new EventoDetalleDTO(
                 id,
                 nombre,
@@ -173,7 +173,7 @@ public class Evento {
                 organizador != null ? organizador : (organizadores.isEmpty() ? "Comunidad Gamer" : String.join(", ", organizadores)),
                 requisitosParticipacion,
                 informacionInscripcion,
-                fotografias,
+                new ArrayList<>(fotografias),
                 popular
         );
     }
