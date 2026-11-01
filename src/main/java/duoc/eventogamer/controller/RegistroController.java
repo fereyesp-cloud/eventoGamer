@@ -1,32 +1,36 @@
 package duoc.eventogamer.controller;
 
 import duoc.eventogamer.model.RegistroForm;
+import duoc.eventogamer.model.Usuario;
+import duoc.eventogamer.repository.UsuarioRepository;
+import duoc.eventogamer.service.PerfilService;
 import jakarta.validation.Valid;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import duoc.eventogamer.service.PerfilService;
+
+import java.util.Set;
 
 @Controller
 public class RegistroController {
 
-    private final InMemoryUserDetailsManager userDetailsManager;
+    
     private final PasswordEncoder passwordEncoder;
     private final PerfilService perfilService;
+    private final UsuarioRepository usuarioRepository;
+    
 
-    public RegistroController(InMemoryUserDetailsManager userDetailsManager,
+    public RegistroController(UsuarioRepository usuarioRepository,
                           PasswordEncoder passwordEncoder,
                           PerfilService perfilService) {
-    this.userDetailsManager = userDetailsManager;
-    this.passwordEncoder = passwordEncoder;
-    this.perfilService = perfilService;
-}
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.perfilService = perfilService;
+    }
 
     @GetMapping("/registro")
     public String mostrarRegistro(Model model) {
@@ -43,7 +47,7 @@ public class RegistroController {
             result.rejectValue("repetirContrasena", "noCoincide", "Las contraseñas no coinciden");
         }
 
-        if (form.getUsuario() != null && userDetailsManager.userExists(form.getUsuario())) {
+        if (form.getUsuario() != null && usuarioRepository.existsByUsername(form.getUsuario())) {
             result.rejectValue("usuario", "duplicado", "Ese nombre de usuario ya está en uso");
         }
 
@@ -51,12 +55,11 @@ public class RegistroController {
             return "registro";
         }
 
-        userDetailsManager.createUser(
-            User.withUsername(form.getUsuario())
-                .password(passwordEncoder.encode(form.getContrasena()))
-                .roles("USER")
-                .build()
-        );
+        usuarioRepository.save(new Usuario(
+        form.getUsuario(),
+            passwordEncoder.encode(form.getContrasena()),
+            Set.of("USER")
+        ));
 
         perfilService.crear(form.getUsuario(), form.getNombre(), form.getCorreo());
 
