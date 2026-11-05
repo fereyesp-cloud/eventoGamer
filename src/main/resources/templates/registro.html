@@ -34,13 +34,14 @@
 
             <div>
                 <label for="contrasena">Contraseña</label>
-                <input type="password" th:field="*{contrasena}" autocomplete="new-password" required>
+                <!-- Sin th:field: la contraseña nunca se devuelve al navegador -->
+                <input type="password" id="contrasena" name="contrasena" autocomplete="new-password" required>
                 <span class="error" th:if="${#fields.hasErrors('contrasena')}" th:errors="*{contrasena}"></span>
             </div>
 
             <div>
                 <label for="repetirContrasena">Repetir contraseña</label>
-                <input type="password" th:field="*{repetirContrasena}" autocomplete="new-password" required>
+                <input type="password" id="repetirContrasena" name="repetirContrasena" autocomplete="new-password" required>
                 <span class="error" th:if="${#fields.hasErrors('repetirContrasena')}" th:errors="*{repetirContrasena}"></span>
             </div>
 
