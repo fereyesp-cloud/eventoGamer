@@ -30,6 +30,22 @@ public class SecurityConfig {
             // Deshabilitar CSRF para las APIs REST (el token JWT protege contra CSRF por ser stateless)
             .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
 
+            // Content Security Policy: el navegador solo carga recursos del propio sitio
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; " +
+                    "script-src 'self'; " +
+                    "style-src 'self'; " +
+                    "img-src 'self' data:; " +
+                    "font-src 'self'; " +
+                    "connect-src 'self'; " +
+                    "object-src 'none'; " +
+                    "base-uri 'self'; " +
+                    "form-action 'self'; " +
+                    "frame-ancestors 'none'"
+                ))
+            )
+
             // Manejo de excepciones de autenticación (401 JSON para APIs)
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
@@ -49,7 +65,7 @@ public class SecurityConfig {
 
                 // Recursos estáticos y vistas públicas
                 .requestMatchers("/", "/eventos", "/login", "/registro", "/error",
-                                 "/css/**", "/img/**", "/js/**").permitAll()
+                                 "/css/**", "/img/**", "/js/**", "/fonts/**").permitAll()
 
                 // ==========================================
                 // 2. APIs Privadas especificadas en la rúbrica:
