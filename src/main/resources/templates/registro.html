@@ -34,7 +34,6 @@
 
             <div>
                 <label for="contrasena">Contraseña</label>
-                <!-- Sin th:field: la contraseña nunca se devuelve al navegador -->
                 <input type="password" id="contrasena" name="contrasena" autocomplete="new-password" required>
                 <span class="error" th:if="${#fields.hasErrors('contrasena')}" th:errors="*{contrasena}"></span>
             </div>
