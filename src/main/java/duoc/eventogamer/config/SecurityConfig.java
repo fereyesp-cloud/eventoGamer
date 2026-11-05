@@ -4,6 +4,7 @@ import duoc.eventogamer.jwt.JwtAuthenticationEntryPoint;
 import duoc.eventogamer.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,13 +25,52 @@ public class SecurityConfig {
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
+    // ==========================================
+    // Cadena 1: API REST (/api/**) — sin estado, autenticación por JWT
+    // ==========================================
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Deshabilitar CSRF para las APIs REST (el token JWT protege contra CSRF por ser stateless)
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+            .securityMatcher("/api/**")
 
-            // Content Security Policy: el navegador solo carga recursos del propio sitio
+            // CSRF no aplica: la API no usa cookies, el token viaja en la cabecera Authorization
+            .csrf(csrf -> csrf.disable())
+
+            // Sin sesión de servidor: nunca se crea JSESSIONID para la API
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // Las respuestas JSON no deben cargar recursos ni mostrarse en iframes
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'"))
+            )
+
+            // 401 en JSON cuando falta o es inválido el token
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+
+            .authorizeHttpRequests(auth -> auth
+                // [Pública] Login: emite el token JWT
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // [Pública] Inicio y búsqueda resumida de eventos
+                .requestMatchers(HttpMethod.GET, "/api/inicio", "/api/eventos").permitAll()
+                // [Privada] Detalle de eventos y todo lo demás requiere JWT
+                .anyRequest().authenticated()
+            )
+
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // ==========================================
+    // Cadena 2: Páginas web (Thymeleaf) — sesión con login por formulario
+    // ==========================================
+    @Bean
+    @Order(2)
+    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // CSRF activo: los formularios Thymeleaf incluyen el token con th:action
+
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(
                     "default-src 'self'; " +
@@ -44,41 +84,16 @@ public class SecurityConfig {
                     "form-action 'self'; " +
                     "frame-ancestors 'none'"
                 ))
-            )
-
-            // Manejo de excepciones de autenticación (401 JSON para APIs)
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-
-            // Política de sesiones: híbrida para soportar tanto navegación web como APIs REST sin estado
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            )   
 
             .authorizeHttpRequests(auth -> auth
-                // ==========================================
-                // 1. APIs Públicas especificadas en la rúbrica:
-                // ==========================================
-                // [Pública] Inicio: eventos recientes, populares, banners y link de login
-                .requestMatchers(HttpMethod.GET, "/api/inicio").permitAll()
-                // [Pública] API de login: autenticación y emisión de token JWT
-                .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
-                // [Pública] Búsqueda y listado resumido de eventos con filtros
-                .requestMatchers(HttpMethod.GET, "/api/eventos").permitAll()
-
-                // Recursos estáticos y vistas públicas
+                // Páginas públicas y recursos estáticos
                 .requestMatchers("/", "/eventos", "/login", "/registro", "/error",
                                  "/css/**", "/img/**", "/js/**", "/fonts/**").permitAll()
-
-                // ==========================================
-                // 2. APIs Privadas especificadas en la rúbrica:
-                // ==========================================
-                // [Privada] Detalle completo de evento (requiere token JWT en header Authorization)
-                .requestMatchers(HttpMethod.GET, "/api/eventos/*").authenticated()
-                .requestMatchers("/api/perfil/**").authenticated()
-
-                // Cualquier otra solicitud requiere autenticación
+                // Todo lo demás (detalle de evento, perfil) requiere login
                 .anyRequest().authenticated()
-            )
+            )   
 
-            // Soporte para login tradicional en navegador si se requiere
             .formLogin(form -> form
                 .loginPage("/login")
                 .defaultSuccessUrl("/eventos", true)
@@ -87,10 +102,7 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
-            )
-
-            // Registrar el filtro JWT antes del filtro estándar de usuario y contraseña
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            );
 
         return http.build();
     }
