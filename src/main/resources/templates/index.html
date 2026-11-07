@@ -11,7 +11,6 @@
     <header th:replace="~{fragments/header :: header}"></header>
 
     <main class="container">
-        <!-- Banner Hero con acceso rápido a login y búsqueda -->
         <section class="hero-gamer">
             <h1>LA PLATAFORMA DE EVENTOS GAMER</h1>
             <p class="lead">Entérate de los mejores torneos, LAN parties, meetups y exposiciones gamer de Chile y el mundo.</p>
@@ -23,7 +22,6 @@
             </div>
         </section>
 
-        <!-- Banners de avisos comerciales -->
         <section class="seccion-banners">
             <h2>Marcas asociadas y avisos comerciales</h2>
             <ul class="lista-marcas">
@@ -31,7 +29,7 @@
             </ul>
         </section>
 
-        <!-- Eventos más populares -->
+    
         <section class="seccion-inicio">
             <h2>Eventos más populares</h2>
             <p th:if="${#lists.isEmpty(populares)}">No hay eventos destacados por ahora.</p>
@@ -54,7 +52,7 @@
             </div>
         </section>
 
-        <!-- Eventos más recientes -->
+       
         <section class="seccion-inicio">
             <h2>Eventos más recientes publicados</h2>
             <p th:if="${#lists.isEmpty(recientes)}">No hay eventos recientes publicados.</p>
