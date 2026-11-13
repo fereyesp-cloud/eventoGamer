@@ -37,7 +37,7 @@
 
             <div>
                 <label for="gamertag">Nombre de usuario (gamertag)</label>
-                <input type="text" th:field="*{gamertag}" required>
+                <input type="text" id="gamertag" th:field="*{gamertag}" required>
                 <span class="error" th:if="${#fields.hasErrors('gamertag')}" th:errors="*{gamertag}"></span>
             </div>
 
