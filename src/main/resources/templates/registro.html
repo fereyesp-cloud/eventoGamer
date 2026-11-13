@@ -16,19 +16,19 @@
         <form th:action="@{/registro}" th:object="${registroForm}" method="post" novalidate>
             <div>
                 <label for="nombre">Nombre</label>
-                <input type="text" th:field="*{nombre}" autocomplete="name" required>
+                <input type="text" id="nombre" th:field="*{nombre}" autocomplete="name" required>
                 <span class="error" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></span>
             </div>
 
             <div>
                 <label for="correo">Correo electrónico</label>
-                <input type="email" th:field="*{correo}" autocomplete="email" required>
+                <input type="email" id="correo" th:field="*{correo}" autocomplete="email" required>
                 <span class="error" th:if="${#fields.hasErrors('correo')}" th:errors="*{correo}"></span>
             </div>
 
             <div>
                 <label for="usuario">Usuario</label>
-                <input type="text" th:field="*{usuario}" autocomplete="username" required>
+                <input type="text" id="usuario" th:field="*{usuario}" autocomplete="username" required>
                 <span class="error" th:if="${#fields.hasErrors('usuario')}" th:errors="*{usuario}"></span>
             </div>
 

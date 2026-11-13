@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -27,15 +29,21 @@ public class DataInitializer implements CommandLineRunner {
     private final BannerRepository bannerRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String passwordUsuarios;
+    private final String passwordAdmin;
 
     public DataInitializer(EventoRepository eventoRepository,
                            BannerRepository bannerRepository,
                            UsuarioRepository usuarioRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           @Value("${app.seed.user-password}") String passwordUsuarios,
+                           @Value("${app.seed.admin-password}") String passwordAdmin) {
         this.eventoRepository = eventoRepository;
         this.bannerRepository = bannerRepository;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordUsuarios = passwordUsuarios;
+        this.passwordAdmin = passwordAdmin;
     }
 
     @Override
@@ -51,9 +59,9 @@ public class DataInitializer implements CommandLineRunner {
         if (usuarioRepository.count() > 0) return;
 
         usuarioRepository.saveAll(List.of(
-            new Usuario("fernando", passwordEncoder.encode("Gamer2026!"), Set.of("USER")),
-            new Usuario("gina", passwordEncoder.encode("Gamer2026!"), Set.of("USER")),
-            new Usuario("admin", passwordEncoder.encode("Admin2026!"), Set.of("USER", "ADMIN"))
+            new Usuario("fernando", passwordEncoder.encode(passwordUsuarios), Set.of("USER")),
+            new Usuario("gina", passwordEncoder.encode(passwordUsuarios), Set.of("USER")),
+            new Usuario("admin", passwordEncoder.encode(passwordAdmin), Set.of("USER", "ADMIN"))
         ));
         log.info("Usuarios iniciales cargados");   // nunca registrar contraseñas en el log
     }
