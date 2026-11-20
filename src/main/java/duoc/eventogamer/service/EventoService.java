@@ -21,10 +21,14 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final BannerRepository bannerRepository;
+    private final EventoInteraccionService interaccionService;
 
-    public EventoService(EventoRepository eventoRepository, BannerRepository bannerRepository) {
+    public EventoService(EventoRepository eventoRepository,
+                         BannerRepository bannerRepository,
+                         EventoInteraccionService interaccionService) {
         this.eventoRepository = eventoRepository;
         this.bannerRepository = bannerRepository;
+        this.interaccionService = interaccionService;
     }
 
     // ==========================================
@@ -83,8 +87,19 @@ public class EventoService {
     // ==========================================
     public Optional<EventoDetalleDTO> obtenerDetalle(Long id) {
         // La conversión a DTO ocurre DENTRO de la transacción,
-        // así las listas lazy (fotografías, organizadores) se pueden cargar
-        return eventoRepository.findById(id).map(Evento::toDetalleDTO);
+        // así las listas lazy (fotografías, organizadores, creador) se pueden cargar
+        return eventoRepository.findById(id).map(evento -> {
+            EventoDetalleDTO dto = evento.toDetalleDTO();
+            if (evento.getCreador() != null) {
+                dto.setPublicadoPor(evento.getCreador().getUsername());
+            }
+            dto.setMultimedia(interaccionService.listarMedia(id));
+            dto.setPromedioValoracion(interaccionService.obtenerPromedioValoracion(id));
+            dto.setTotalValoraciones(interaccionService.contarValoraciones(id));
+            dto.setTotalComentarios(interaccionService.contarComentarios(id));
+            dto.setTotalCompartidos(interaccionService.contarCompartidos(id));
+            return dto;
+        });
     }
 
     public Optional<Evento> buscarPorId(Long id) {
@@ -95,6 +110,9 @@ public class EventoService {
             Hibernate.initialize(e.getOrganizadores());
             Hibernate.initialize(e.getExpositores());
             Hibernate.initialize(e.getFotografias());
+            if (e.getCreador() != null) {
+                Hibernate.initialize(e.getCreador());
+            }
         });
         return evento;
     }

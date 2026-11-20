@@ -23,6 +23,12 @@ public class EventoDetalleDTO {
     private String informacionInscripcion;
     private List<String> fotografias;
     private boolean popular;
+    private String publicadoPor;
+    private List<EventoMediaDTO> multimedia;
+    private double promedioValoracion;
+    private long totalValoraciones;
+    private long totalComentarios;
+    private long totalCompartidos;
 
     public EventoDetalleDTO() {}
 
@@ -100,5 +106,23 @@ public class EventoDetalleDTO {
 
     public boolean isPopular() { return popular; }
     public void setPopular(boolean popular) { this.popular = popular; }
+
+    public String getPublicadoPor() { return publicadoPor; }
+    public void setPublicadoPor(String publicadoPor) { this.publicadoPor = publicadoPor; }
+
+    public List<EventoMediaDTO> getMultimedia() { return multimedia; }
+    public void setMultimedia(List<EventoMediaDTO> multimedia) { this.multimedia = multimedia; }
+
+    public double getPromedioValoracion() { return promedioValoracion; }
+    public void setPromedioValoracion(double promedioValoracion) { this.promedioValoracion = promedioValoracion; }
+
+    public long getTotalValoraciones() { return totalValoraciones; }
+    public void setTotalValoraciones(long totalValoraciones) { this.totalValoraciones = totalValoraciones; }
+
+    public long getTotalComentarios() { return totalComentarios; }
+    public void setTotalComentarios(long totalComentarios) { this.totalComentarios = totalComentarios; }
+
+    public long getTotalCompartidos() { return totalCompartidos; }
+    public void setTotalCompartidos(long totalCompartidos) { this.totalCompartidos = totalCompartidos; }
 }
 

@@ -157,6 +157,88 @@ class EventogamerApplicationTests {
                 .andExpect(jsonPath("$.organizador", notNullValue()))
                 .andExpect(jsonPath("$.requisitosParticipacion", notNullValue()))
                 .andExpect(jsonPath("$.informacionInscripcion", notNullValue()))
-                .andExpect(jsonPath("$.fotografias", hasSize(greaterThan(0))));
+                .andExpect(jsonPath("$.fotografias", hasSize(greaterThan(0))))
+                .andExpect(jsonPath("$.multimedia", notNullValue()));
+    }
+
+    @Test
+    @DisplayName("[APIs Privadas] Multimedia, compartir, comentarios y valoraciones sin JWT retornan 401")
+    void apisInteraccionSinTokenRetornan401() throws Exception {
+        mockMvc.perform(get("/api/eventos/1/media"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/eventos/1/media")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipo\":\"FOTO\",\"url\":\"https://ejemplo.com/a.jpg\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/eventos/1/compartir")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"canal\":\"SITIO_WEB\",\"mensaje\":\"Hola\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/eventos/compartidos"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/eventos/1/comentarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contenido\":\"Gran evento\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/eventos/1/valoraciones")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"puntuacion\":5}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("[APIs Privadas] Con JWT permite agregar media, compartir, comentar y valorar")
+    void apisInteraccionConTokenFuncionanCorrectamente() throws Exception {
+        String loginJson = """
+                {
+                    "username": "fernando",
+                    "password": "Gamer2026!"
+                }
+                """;
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson))
+                .andExpect(status().isOk())
+                .andReturn();
+        String token = JsonPath.read(loginResult.getResponse().getContentAsString(), "$.token");
+
+        // 1. Agregar foto y video por URL
+        mockMvc.perform(post("/api/eventos/1/media")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipo\":\"VIDEO\",\"url\":\"https://youtu.be/e_E9W2vsRbQ\",\"titulo\":\"Resumen\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", is("VIDEO")))
+                .andExpect(jsonPath("$.embedUrl", is("https://www.youtube-nocookie.com/embed/e_E9W2vsRbQ")))
+                .andExpect(jsonPath("$.usuario", is("fernando")));
+
+        // 2. Compartir evento en sitio web y redes sociales
+        mockMvc.perform(post("/api/eventos/1/compartir")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"canal\":\"SITIO_WEB\",\"mensaje\":\"¡Imperdible torneo!\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.canal", is("SITIO_WEB")))
+                .andExpect(jsonPath("$.enlacesRedesSociales.whatsapp", notNullValue()))
+                .andExpect(jsonPath("$.enlacesRedesSociales.twitter", notNullValue()));
+
+        // 3. Comentar evento
+        mockMvc.perform(post("/api/eventos/1/comentarios")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contenido\":\"¡Excelente iniciativa para la comunidad gamer!\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.usuario", is("fernando")))
+                .andExpect(jsonPath("$.contenido", containsString("comunidad gamer")));
+
+        // 4. Valorar evento
+        mockMvc.perform(post("/api/eventos/1/valoraciones")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"puntuacion\":5}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.miValoracion", is(5)))
+                .andExpect(jsonPath("$.promedio", greaterThan(0.0)));
     }
 }

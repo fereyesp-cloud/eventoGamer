@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos Compartidos - Eventos Gamer</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container">
+        <h1>Eventos compartidos por la comunidad</h1>
+        <p class="lead">Descubre los eventos que otros jugadores han recomendado en el sitio web.</p>
+
+        <div th:if="${#lists.isEmpty(compartidos)}" class="panel-interaccion">
+            <p class="texto-suave">Todavía no hay eventos compartidos en el sitio web. Entra al detalle de un evento para compartirlo.</p>
+            <a th:href="@{/eventos}" class="btn">Explorar eventos</a>
+        </div>
+
+        <div class="lista-compartidos" th:if="${not #lists.isEmpty(compartidos)}">
+            <article th:each="c : ${compartidos}" class="compartido-card">
+                <div class="comentario-header">
+                    <div>
+                        <strong class="comentario-autor" th:text="${c.usuario}">usuario</strong>
+                        <span class="texto-suave"> compartió un evento</span>
+                    </div>
+                    <span class="media-meta" th:text="${#temporals.format(c.fechaCompartido, 'dd-MM-yyyy HH:mm')}">fecha</span>
+                </div>
+
+                <h2 class="compartido-titulo">
+                    <a th:href="@{/eventos/{id}(id=${c.eventoId})}" th:text="${c.eventoNombre}">Evento</a>
+                </h2>
+                <span class="badge badge-juego" th:text="${c.eventoVideojuego}">Videojuego</span>
+
+                <p class="comentario-texto" th:if="${c.mensaje != null}" th:text="${c.mensaje}">Mensaje</p>
+
+                <div class="card-footer">
+                    <a th:href="@{/eventos/{id}(id=${c.eventoId})}" class="btn btn-secondary">Ver evento completo →</a>
+                </div>
+            </article>
+        </div>
+    </main>
+</body>
+</html>

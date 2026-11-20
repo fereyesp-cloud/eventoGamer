@@ -58,8 +58,12 @@ Usuario	eventogamer_app (configurable con la variable DB_USER)
 Contraseña	variable de entorno DB_PASSWORD
 Modelo de datos
 Tabla	Contenido
-evento	Datos principales del evento: nombre, descripción, videojuego, categoría, país, ciudad, modalidad, fecha, hora, ubicación o enlace, requisitos, inscripción, popularidad y fecha de publicación
-evento_foto	Fotografías del evento (una fila por foto)
+evento	Datos principales del evento: nombre, descripción, videojuego, categoría, país, ciudad, modalidad, fecha, hora, ubicación o enlace, requisitos, inscripción, popularidad, fecha de publicación y usuario creador (`usuario_id`)
+evento_foto	Fotografías iniciales del evento (una fila por foto)
+evento_media	Fotos y videos agregados por usuarios autenticados (`FOTO` / `VIDEO`, enlace HTTPS o archivo subido)
+evento_compartido	Registro de eventos compartidos en el sitio web (`SITIO_WEB`) y redes sociales (`WHATSAPP`, `TWITTER`, `FACEBOOK`, `LINKEDIN`)
+evento_comentario	Comentarios publicados por usuarios autenticados en cada evento
+evento_valoracion	Valoraciones de 1 a 5 estrellas (única por combinación `evento_id` + `usuario_id`)
 evento_organizador	Organizadores del evento
 evento_expositor	Principales expositores del evento
 banner	Avisos comerciales del inicio (texto, activo, orden)
@@ -107,7 +111,19 @@ fecha	?fecha=2026-11-14	Exacta (yyyy-MM-dd)
 modalidad	?modalidad=online	Presencial u Online
 Privadas (requieren token JWT)
 Método	Ruta	Descripción
-GET	/api/eventos/{id}	Detalle completo: descripción, videojuego, fecha y hora, ubicación o enlace, organizador, requisitos, información de inscripción y fotografías
+GET	/api/eventos/{id}	Detalle completo: descripción, videojuego, fecha y hora, ubicación o enlace, organizador, requisitos, información de inscripción, fotografías, multimedia, promedio de valoración y contadores
+GET	/api/eventos/{id}/media	Lista las fotos y videos agregados al evento desde MySQL
+POST	/api/eventos/{id}/media	Agrega una foto o video al evento mediante enlace HTTPS (`tipo`: `FOTO` o `VIDEO`, `url`, `titulo` opcional)
+POST	/api/eventos/{id}/media/upload	Sube un archivo multimedia (`multipart/form-data`: `tipo`, `archivo`, `titulo` opcional; máx. 10 MB)
+DELETE	/api/eventos/{id}/media/{mediaId}	Elimina un archivo multimedia (solo autor o `ADMIN`)
+GET	/api/eventos/compartidos	Lista los eventos compartidos en el sitio web (`SITIO_WEB`)
+GET	/api/eventos/{id}/compartidos	Historial de compartidos de un evento
+POST	/api/eventos/{id}/compartir	Comparte un evento en el sitio web o redes sociales (`canal`: `SITIO_WEB`, `WHATSAPP`, `TWITTER`, `FACEBOOK`, `LINKEDIN`; `mensaje` opcional) y retorna enlaces listos
+GET	/api/eventos/{id}/comentarios	Lista comentarios del evento ordenados por fecha descendente
+POST	/api/eventos/{id}/comentarios	Publica un comentario en el evento (`contenido`)
+DELETE	/api/eventos/{id}/comentarios/{comentarioId}	Elimina un comentario (solo autor o `ADMIN`)
+GET	/api/eventos/{id}/valoraciones	Retorna promedio, total, valoración del usuario autenticado y listado
+POST	/api/eventos/{id}/valoraciones	Crea o actualiza la valoración del usuario (1 a 5 estrellas)
 
 El token se envía en la cabecera:
 
@@ -125,6 +141,30 @@ curl -X POST http://localhost:8080/api/auth/login \
 # Detalle privado
 curl http://localhost:8080/api/eventos/1 \
   -H "Authorization: Bearer <token>"
+
+# Agregar foto o video por URL
+curl -X POST http://localhost:8080/api/eventos/1/media \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"tipo":"VIDEO","url":"https://www.youtube.com/watch?v=e_E9W2vsRbQ","titulo":"Tráiler del evento"}'
+
+# Compartir evento en el sitio web o redes sociales
+curl -X POST http://localhost:8080/api/eventos/1/compartir \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"canal":"SITIO_WEB","mensaje":"¡Súmate a este torneo gamer!"}'
+
+# Comentar evento
+curl -X POST http://localhost:8080/api/eventos/1/comentarios \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"contenido":"¡Excelente torneo, nos vemos allá!"}'
+
+# Valorar evento (1 a 5)
+curl -X POST http://localhost:8080/api/eventos/1/valoraciones \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"puntuacion":5}'
 
 cmd (Windows)
 

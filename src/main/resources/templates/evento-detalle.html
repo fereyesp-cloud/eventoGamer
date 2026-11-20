@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${evento.nombre} + ' - Eventos Gamer'">Detalle</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <script th:src="@{/js/evento-interaccion.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/header :: header}"></header>
@@ -13,10 +14,25 @@
     <main class="container">
         <a th:href="@{/eventos}" class="volver">← Volver a eventos</a>
 
+        <div th:if="${mensajeExito != null}" class="alert alert-success" role="status">
+            <span th:text="${mensajeExito}">Acción realizada con éxito.</span>
+            <span th:if="${enlaceRedSocial != null}">
+                <a th:href="${enlaceRedSocial}" target="_blank" rel="noopener noreferrer" class="enlace-alerta">
+                    Abrir publicación en <span th:text="${canalRedSocial}">red social</span> →
+                </a>
+            </span>
+        </div>
+
+        <div th:if="${mensajeError != null}" class="alert alert-error" role="alert" th:text="${mensajeError}">
+            Error al procesar la acción.
+        </div>
+
         <div class="detalle-header">
             <span class="badge badge-modalidad" th:text="${evento.modalidad}">Modalidad</span>
             <span class="badge badge-juego" th:text="${evento.videojuego}">Videojuego</span>
             <span class="badge badge-categoria" th:text="${evento.categoria}">Categoría</span>
+            <span class="badge badge-rating" th:if="${valoraciones.totalValoraciones > 0}"
+                  th:text="'★ ' + ${valoraciones.promedio} + ' (' + ${valoraciones.totalValoraciones} + ')'">★ 5.0</span>
         </div>
 
         <h1 th:text="${evento.nombre}">Nombre del Evento</h1>
@@ -39,6 +55,9 @@
                     <a th:href="${evento.enlaceAcceso}" th:text="${evento.enlaceAcceso}" target="_blank" rel="noopener noreferrer"></a>
                 </li>
                 <li><strong>Organizador:</strong> <span th:text="${evento.organizador}"></span></li>
+                <li th:if="${evento.creador != null}">
+                    <strong>Publicado por:</strong> <span th:text="${evento.creador.username}"></span>
+                </li>
             </ul>
         </section>
 
@@ -52,13 +71,239 @@
             <p th:text="${evento.informacionInscripcion}"></p>
         </section>
 
-        <section class="detalle-seccion" th:if="${not #lists.isEmpty(evento.fotografias)}">
-            <h2>Fotografías del evento</h2>
-            <div class="galeria-fotos">
-                <div th:each="foto : ${evento.fotografias}" class="foto-card">
-                    <img th:src="@{${foto}}" alt="Fotografía del evento" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22><rect width=%22100%%22 height=%22100%%22 fill=%22%23161629%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2300e5ff%22 font-family=%22sans-serif%22 font-size=%2220%22>🎮 Foto Gamer</text></svg>'">
+        <!-- ==================== MULTIMEDIA: FOTOS Y VIDEOS ==================== -->
+        <section id="multimedia" class="detalle-seccion">
+            <h2>Galería de fotos y videos</h2>
+
+            <div th:if="${not #lists.isEmpty(evento.fotografias) or not #lists.isEmpty(fotosMedia)}">
+                <h3>Fotografías</h3>
+                <div class="galeria-fotos">
+                    <div th:each="foto : ${evento.fotografias}" class="foto-card">
+                        <img th:src="@{${foto}}" alt="Fotografía del evento" class="js-foto-fallback">
+                        <p class="media-meta">Foto oficial del evento</p>
+                    </div>
+                    <div th:each="m : ${fotosMedia}" class="foto-card">
+                        <img th:src="${m.url}" th:alt="${m.titulo != null ? m.titulo : 'Fotografía de la comunidad'}" class="js-foto-fallback">
+                        <p class="media-titulo" th:if="${m.titulo != null}" th:text="${m.titulo}"></p>
+                        <div class="media-footer">
+                            <span class="media-meta" th:text="'Por ' + ${m.usuario}"></span>
+                            <form th:if="${esAdmin or m.usuario == usuarioActual}"
+                                  th:action="@{/eventos/{id}/media/{mid}/eliminar(id=${evento.id}, mid=${m.id})}"
+                                  method="post" class="inline-form">
+                                <button type="submit" class="btn-mini btn-peligro">Eliminar</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <div th:if="${not #lists.isEmpty(videosMedia)}" class="bloque-videos">
+                <h3>Videos del evento</h3>
+                <div class="galeria-videos">
+                    <article th:each="v : ${videosMedia}" class="video-card">
+                        <div th:if="${v.embedUrl != null}" class="video-embed-wrapper">
+                            <iframe th:src="${v.embedUrl}"
+                                    th:title="${v.titulo != null ? v.titulo : 'Video del evento'}"
+                                    loading="lazy"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allowfullscreen></iframe>
+                        </div>
+                        <div th:if="${v.embedUrl == null and (#strings.endsWith(#strings.toLowerCase(v.url), '.mp4') or #strings.endsWith(#strings.toLowerCase(v.url), '.webm'))}">
+                            <video controls class="video-player" preload="metadata">
+                                <source th:src="${v.url}">
+                                Tu navegador no soporta la reproducción de video.
+                            </video>
+                        </div>
+                        <div th:if="${v.embedUrl == null and not (#strings.endsWith(#strings.toLowerCase(v.url), '.mp4') or #strings.endsWith(#strings.toLowerCase(v.url), '.webm'))}"
+                             class="video-enlace-externo">
+                            <a th:href="${v.url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+                                Ver video externo →
+                            </a>
+                        </div>
+                        <p class="media-titulo" th:if="${v.titulo != null}" th:text="${v.titulo}"></p>
+                        <div class="media-footer">
+                            <span class="media-meta" th:text="'Subido por ' + ${v.usuario}"></span>
+                            <form th:if="${esAdmin or v.usuario == usuarioActual}"
+                                  th:action="@{/eventos/{id}/media/{mid}/eliminar(id=${evento.id}, mid=${v.id})}"
+                                  method="post" class="inline-form">
+                                <button type="submit" class="btn-mini btn-peligro">Eliminar</button>
+                            </form>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div class="panel-interaccion">
+                <h3>Agregar foto o video</h3>
+                <div class="media-tabs">
+                    <button type="button" class="btn btn-secondary media-tab-btn activo" data-target="panel-media-url">
+                        Desde enlace HTTPS
+                    </button>
+                    <button type="button" class="btn btn-secondary media-tab-btn" data-target="panel-media-upload">
+                        Subir archivo (JPG, PNG, MP4)
+                    </button>
+                </div>
+
+                <form id="panel-media-url" class="media-tab-panel"
+                      th:action="@{/eventos/{id}/media(id=${evento.id})}" method="post">
+                    <div class="form-grid">
+                        <div>
+                            <label for="media-tipo-url">Tipo:</label>
+                            <select id="media-tipo-url" name="tipo" required>
+                                <option value="FOTO">Fotografía</option>
+                                <option value="VIDEO">Video (YouTube, Vimeo o MP4)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="media-titulo-url">Título (opcional):</label>
+                            <input type="text" id="media-titulo-url" name="titulo" maxlength="120"
+                                   placeholder="Ej. Final del torneo o ambiente en arena">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="media-url">Enlace HTTPS de la foto o video:</label>
+                        <input type="url" id="media-url" name="url" maxlength="500" required
+                               placeholder="https://www.youtube.com/watch?v=... o https://.../imagen.jpg">
+                    </div>
+                    <button type="submit" class="btn">Agregar al evento</button>
+                </form>
+
+                <form id="panel-media-upload" class="media-tab-panel oculto"
+                      th:action="@{/eventos/{id}/media/upload(id=${evento.id})}" method="post"
+                      enctype="multipart/form-data">
+                    <div class="form-grid">
+                        <div>
+                            <label for="media-tipo-file">Tipo:</label>
+                            <select id="media-tipo-file" name="tipo" required>
+                                <option value="FOTO">Fotografía (JPG, PNG, WEBP, GIF)</option>
+                                <option value="VIDEO">Video (MP4, WEBM)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="media-titulo-file">Título (opcional):</label>
+                            <input type="text" id="media-titulo-file" name="titulo" maxlength="120"
+                                   placeholder="Descripción breve del archivo">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="media-archivo">Seleccionar archivo (máx. 10 MB):</label>
+                        <input type="file" id="media-archivo" name="archivo"
+                               accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.webm" required>
+                    </div>
+                    <button type="submit" class="btn">Subir archivo</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ==================== COMPARTIR EVENTO ==================== -->
+        <section id="compartir" class="detalle-seccion">
+            <h2>Compartir este evento</h2>
+
+            <div class="panel-interaccion">
+                <h3>Compartir en el sitio web</h3>
+                <p class="texto-suave">Publica este evento en el <a th:href="@{/compartidos}">muro de eventos compartidos</a> para que otros gamers lo descubran.</p>
+                <form th:action="@{/eventos/{id}/compartir(id=${evento.id})}" method="post">
+                    <input type="hidden" name="canal" value="SITIO_WEB">
+                    <div>
+                        <label for="mensaje-compartir">Mensaje para la comunidad (opcional):</label>
+                        <input type="text" id="mensaje-compartir" name="mensaje" maxlength="300"
+                               placeholder="Ej. ¡Busco equipo para este torneo, nos vemos allá!">
+                    </div>
+                    <button type="submit" class="btn">Compartir en el sitio web</button>
+                </form>
+
+                <h3 class="subtitulo-redes">Compartir en redes sociales</h3>
+                <div class="redes-acciones">
+                    <form th:action="@{/eventos/{id}/compartir(id=${evento.id})}" method="post" class="inline-form">
+                        <input type="hidden" name="canal" value="WHATSAPP">
+                        <button type="submit" class="btn btn-red btn-whatsapp">WhatsApp</button>
+                    </form>
+                    <form th:action="@{/eventos/{id}/compartir(id=${evento.id})}" method="post" class="inline-form">
+                        <input type="hidden" name="canal" value="TWITTER">
+                        <button type="submit" class="btn btn-red btn-twitter">X / Twitter</button>
+                    </form>
+                    <form th:action="@{/eventos/{id}/compartir(id=${evento.id})}" method="post" class="inline-form">
+                        <input type="hidden" name="canal" value="FACEBOOK">
+                        <button type="submit" class="btn btn-red btn-facebook">Facebook</button>
+                    </form>
+                    <form th:action="@{/eventos/{id}/compartir(id=${evento.id})}" method="post" class="inline-form">
+                        <input type="hidden" name="canal" value="LINKEDIN">
+                        <button type="submit" class="btn btn-red btn-linkedin">LinkedIn</button>
+                    </form>
+                    <button type="button" id="btn-copiar-enlace" class="btn btn-secondary"
+                            th:attr="data-url=${enlacesRedes['sitioWeb']}">
+                        Copiar enlace
+                    </button>
+                </div>
+                <p id="copiar-feedback" class="texto-exito oculto" role="status"></p>
+
+                <p class="media-meta" th:if="${not #lists.isEmpty(compartidos)}"
+                   th:text="'Este evento ha sido compartido ' + ${#lists.size(compartidos)} + ' veces.'"></p>
+            </div>
+        </section>
+
+        <!-- ==================== VALORACIONES ==================== -->
+        <section id="valoraciones" class="detalle-seccion">
+            <h2>Valoración del evento</h2>
+            <div class="panel-interaccion">
+                <div class="resumen-valoracion">
+                    <span class="nota-grande" th:text="${valoraciones.totalValoraciones > 0 ? valoraciones.promedio : '—'}">0.0</span>
+                    <div>
+                        <p class="estrellas-label"
+                           th:text="${valoraciones.totalValoraciones > 0 ? 'Promedio de ' + valoraciones.totalValoraciones + ' valoración(es)' : 'Aún no hay valoraciones. ¡Sé el primero!'}"></p>
+                        <p class="media-meta" th:if="${valoraciones.miValoracion != null}"
+                           th:text="'Tu valoración actual: ' + ${valoraciones.miValoracion} + ' / 5 ★'"></p>
+                    </div>
+                </div>
+
+                <form th:action="@{/eventos/{id}/valoraciones(id=${evento.id})}" method="post" class="form-valoracion">
+                    <fieldset class="estrellas-fieldset">
+                        <legend>Califica este evento (1 a 5 estrellas)</legend>
+                        <label th:each="n : ${#numbers.sequence(1, 5)}" class="estrella-opcion">
+                            <input type="radio" name="puntuacion" th:value="${n}"
+                                   th:checked="${valoraciones.miValoracion == n}" required>
+                            <span th:text="${n} + ' ★'">5 ★</span>
+                        </label>
+                    </fieldset>
+                    <button type="submit" class="btn">Guardar valoración</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ==================== COMENTARIOS ==================== -->
+        <section id="comentarios" class="detalle-seccion">
+            <h2>Comentarios de la comunidad (<span th:text="${#lists.size(comentarios)}">0</span>)</h2>
+
+            <div class="panel-interaccion">
+                <form th:action="@{/eventos/{id}/comentarios(id=${evento.id})}" method="post">
+                    <div>
+                        <label for="contenido-comentario">Escribe tu comentario:</label>
+                        <textarea id="contenido-comentario" name="contenido" rows="3" minlength="2" maxlength="1000"
+                                  required placeholder="Comparte tu opinión, dudas o busca equipo para el evento..."></textarea>
+                    </div>
+                    <button type="submit" class="btn">Publicar comentario</button>
+                </form>
+            </div>
+
+            <p th:if="${#lists.isEmpty(comentarios)}" class="texto-suave">
+                Todavía no hay comentarios en este evento.
+            </p>
+
+            <ul class="lista-comentarios" th:if="${not #lists.isEmpty(comentarios)}">
+                <li th:each="c : ${comentarios}" class="comentario-card">
+                    <div class="comentario-header">
+                        <strong class="comentario-autor" th:text="${c.usuario}">usuario</strong>
+                        <span class="media-meta" th:text="${#temporals.format(c.fechaCreacion, 'dd-MM-yyyy HH:mm')}">fecha</span>
+                    </div>
+                    <p class="comentario-texto" th:text="${c.contenido}">Texto del comentario</p>
+                    <div class="comentario-acciones" th:if="${esAdmin or c.usuario == usuarioActual}">
+                        <form th:action="@{/eventos/{id}/comentarios/{cid}/eliminar(id=${evento.id}, cid=${c.id})}"
+                              method="post" class="inline-form">
+                            <button type="submit" class="btn-mini btn-peligro">Eliminar</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
         </section>
 
         <section class="detalle-seccion" th:if="${not #lists.isEmpty(evento.organizadores)}">
