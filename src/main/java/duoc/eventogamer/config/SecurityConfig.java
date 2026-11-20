@@ -76,7 +76,9 @@ public class SecurityConfig {
                     "default-src 'self'; " +
                     "script-src 'self'; " +
                     "style-src 'self'; " +
-                    "img-src 'self' data:; " +
+                    "img-src 'self' https: data:; " +
+                    "media-src 'self' https:; " +
+                    "frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com; " +
                     "font-src 'self'; " +
                     "connect-src 'self'; " +
                     "object-src 'none'; " +

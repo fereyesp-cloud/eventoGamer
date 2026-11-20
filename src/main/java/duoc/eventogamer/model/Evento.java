@@ -100,6 +100,10 @@ public class Evento {
     @Column(name = "fecha_publicacion", nullable = false)
     private LocalDate fechaPublicacion;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    private Usuario creador;
+
     public Evento() {}
 
     public Evento(Long id, String nombre, String descripcion, String videojuego,
@@ -259,4 +263,7 @@ public class Evento {
 
     public LocalDate getFechaPublicacion() { return fechaPublicacion; }
     public void setFechaPublicacion(LocalDate fechaPublicacion) { this.fechaPublicacion = fechaPublicacion; }
+
+    public Usuario getCreador() { return creador; }
+    public void setCreador(Usuario creador) { this.creador = creador; }
 }

@@ -56,12 +56,16 @@ USE eventogamer;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS evento_valoracion;
+DROP TABLE IF EXISTS evento_comentario;
+DROP TABLE IF EXISTS evento_compartido;
+DROP TABLE IF EXISTS evento_media;
 DROP TABLE IF EXISTS usuario_rol;
-DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS evento_foto;
 DROP TABLE IF EXISTS evento_expositor;
 DROP TABLE IF EXISTS evento_organizador;
 DROP TABLE IF EXISTS evento;
+DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS banner;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -70,9 +74,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================================
 --  3. CREACIÓN DE TABLAS
 -- =====================================================================
--- Los nombres de índices y claves foráneas son los que genera Hibernate,
--- para que la aplicación (ddl-auto=update) reconozca el esquema sin
--- crear restricciones duplicadas.
 
 -- ---------------------------------------------------------------------
 -- 3.1 banner: avisos comerciales de la página de inicio
@@ -86,7 +87,30 @@ CREATE TABLE banner (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.2 evento: datos principales de cada evento
+-- 3.2 usuario: usuarios que pueden iniciar sesión
+-- ---------------------------------------------------------------------
+CREATE TABLE usuario (
+    id        BIGINT       NOT NULL AUTO_INCREMENT,
+    username  VARCHAR(50)  NOT NULL,
+    password  VARCHAR(100) NOT NULL,   -- SIEMPRE hash BCrypt, nunca texto plano
+    activo    BIT(1)       NOT NULL,   -- un usuario inactivo no puede iniciar sesión
+    PRIMARY KEY (id),
+    UNIQUE KEY UK863n1y3x0jalatoir4325ehal (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- 3.3 usuario_rol: roles de cada usuario (un usuario puede tener varios)
+-- ---------------------------------------------------------------------
+CREATE TABLE usuario_rol (
+    usuario_id  BIGINT      NOT NULL,
+    rol         VARCHAR(20) DEFAULT NULL,
+    UNIQUE KEY UKhs0mqr8q0tsmf7gyfbp03qibu (usuario_id, rol),
+    CONSTRAINT FKbyfgloj439r9wr9smrms9u33r
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- 3.4 evento: datos principales de cada evento
 -- ---------------------------------------------------------------------
 CREATE TABLE evento (
     id                        BIGINT       NOT NULL AUTO_INCREMENT,
@@ -113,16 +137,19 @@ CREATE TABLE evento (
     destacado                 BIT(1)       NOT NULL,
     popular                   BIT(1)       NOT NULL,   -- usado para "eventos populares"
     fecha_publicacion         DATE         NOT NULL,   -- usado para "eventos recientes"
+    usuario_id                BIGINT       DEFAULT NULL, -- usuario que publicó el evento
     PRIMARY KEY (id),
-    -- Índices para acelerar la búsqueda con filtros y el orden de "recientes"
     KEY idx_evento_fecha       (fecha),
     KEY idx_evento_ubicacion   (pais, ciudad),
     KEY idx_evento_modalidad   (modalidad),
-    KEY idx_evento_publicacion (fecha_publicacion)
+    KEY idx_evento_publicacion (fecha_publicacion),
+    KEY fk_evento_usuario      (usuario_id),
+    CONSTRAINT fk_evento_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.3 evento_organizador: organizadores de cada evento (uno por fila)
+-- 3.5 evento_organizador: organizadores de cada evento (uno por fila)
 -- ---------------------------------------------------------------------
 CREATE TABLE evento_organizador (
     evento_id  BIGINT       NOT NULL,
@@ -133,7 +160,7 @@ CREATE TABLE evento_organizador (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.4 evento_expositor: principales expositores de cada evento
+-- 3.6 evento_expositor: principales expositores de cada evento
 -- ---------------------------------------------------------------------
 CREATE TABLE evento_expositor (
     evento_id  BIGINT       NOT NULL,
@@ -144,7 +171,7 @@ CREATE TABLE evento_expositor (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.5 evento_foto: fotografías de cada evento
+-- 3.7 evento_foto: fotografías iniciales de cada evento
 -- ---------------------------------------------------------------------
 CREATE TABLE evento_foto (
     evento_id  BIGINT       NOT NULL,
@@ -155,25 +182,79 @@ CREATE TABLE evento_foto (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.6 usuario: usuarios que pueden iniciar sesión
+-- 3.8 evento_media: fotos y videos agregados a los eventos publicados
 -- ---------------------------------------------------------------------
-CREATE TABLE usuario (
-    id        BIGINT       NOT NULL AUTO_INCREMENT,
-    username  VARCHAR(50)  NOT NULL,
-    password  VARCHAR(100) NOT NULL,   -- SIEMPRE hash BCrypt, nunca texto plano
-    activo    BIT(1)       NOT NULL,   -- un usuario inactivo no puede iniciar sesión
+CREATE TABLE evento_media (
+    id              BIGINT       NOT NULL AUTO_INCREMENT,
+    evento_id       BIGINT       NOT NULL,
+    usuario_id      BIGINT       NOT NULL,
+    tipo            VARCHAR(10)  NOT NULL,   -- 'FOTO' o 'VIDEO'
+    url             VARCHAR(500) NOT NULL,
+    titulo          VARCHAR(120) DEFAULT NULL,
+    fecha_creacion  DATETIME(6)  NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY UK863n1y3x0jalatoir4325ehal (username)
+    KEY idx_media_evento  (evento_id),
+    KEY idx_media_usuario (usuario_id),
+    CONSTRAINT fk_media_evento
+        FOREIGN KEY (evento_id) REFERENCES evento (id),
+    CONSTRAINT fk_media_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
--- 3.7 usuario_rol: roles de cada usuario (un usuario puede tener varios)
+-- 3.9 evento_compartido: eventos compartidos en sitio web y redes sociales
 -- ---------------------------------------------------------------------
-CREATE TABLE usuario_rol (
-    usuario_id  BIGINT      NOT NULL,
-    rol         VARCHAR(20) DEFAULT NULL,
-    UNIQUE KEY UKhs0mqr8q0tsmf7gyfbp03qibu (usuario_id, rol),
-    CONSTRAINT FKbyfgloj439r9wr9smrms9u33r
+CREATE TABLE evento_compartido (
+    id                BIGINT       NOT NULL AUTO_INCREMENT,
+    evento_id         BIGINT       NOT NULL,
+    usuario_id        BIGINT       NOT NULL,
+    canal             VARCHAR(20)  NOT NULL, -- 'SITIO_WEB', 'WHATSAPP', 'TWITTER', 'FACEBOOK', 'LINKEDIN'
+    mensaje           VARCHAR(300) DEFAULT NULL,
+    enlace_compartido VARCHAR(500) NOT NULL,
+    fecha_compartido  DATETIME(6)  NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_compartido_evento      (evento_id),
+    KEY idx_compartido_canal_fecha (canal, fecha_compartido),
+    KEY fk_compartido_usuario      (usuario_id),
+    CONSTRAINT fk_compartido_evento
+        FOREIGN KEY (evento_id) REFERENCES evento (id),
+    CONSTRAINT fk_compartido_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- 3.10 evento_comentario: comentarios de usuarios en eventos publicados
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_comentario (
+    id              BIGINT        NOT NULL AUTO_INCREMENT,
+    evento_id       BIGINT        NOT NULL,
+    usuario_id      BIGINT        NOT NULL,
+    contenido       VARCHAR(1000) NOT NULL,
+    fecha_creacion  DATETIME(6)   NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_comentario_evento_fecha (evento_id, fecha_creacion),
+    KEY fk_comentario_usuario       (usuario_id),
+    CONSTRAINT fk_comentario_evento
+        FOREIGN KEY (evento_id) REFERENCES evento (id),
+    CONSTRAINT fk_comentario_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---------------------------------------------------------------------
+-- 3.11 evento_valoracion: valoraciones (1 a 5 estrellas) por evento y usuario
+-- ---------------------------------------------------------------------
+CREATE TABLE evento_valoracion (
+    id                  BIGINT      NOT NULL AUTO_INCREMENT,
+    evento_id           BIGINT      NOT NULL,
+    usuario_id          BIGINT      NOT NULL,
+    puntuacion          INT         NOT NULL,
+    fecha_actualizacion DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_valoracion_evento_usuario (evento_id, usuario_id),
+    KEY fk_valoracion_usuario (usuario_id),
+    CONSTRAINT fk_valoracion_evento
+        FOREIGN KEY (evento_id) REFERENCES evento (id),
+    CONSTRAINT fk_valoracion_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuario (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -192,14 +273,33 @@ INSERT INTO banner (id, texto, activo, orden) VALUES
     (4, 'EnergyDrink Monster - Patrocinador oficial del campeonato regional',   b'1', 4);
 
 -- ---------------------------------------------------------------------
--- 4.2 Eventos
+-- 4.2 Usuarios
+-- ---------------------------------------------------------------------
+-- Las contraseñas se almacenan como hash BCrypt (factor de costo 10).
+-- Nunca se guardan en texto plano. Las credenciales de demo están en el README.
+INSERT INTO usuario (id, username, password, activo) VALUES
+    (1, 'fernando', '$2a$10$XxLJXSHfwRFFtyN1oMDpIOEFHoGxMNrwLznEMB3RGGZKOjQOsD74u', b'1'),
+    (2, 'gina',     '$2a$10$H2snBk9k9AHjzsF3zhTz4uYfk9r9BsoG0Uq7TW6HH4OSnqGVG0qke', b'1'),
+    (3, 'admin',    '$2a$10$cJ4HMJDA5BCPS742D7qR1e./gYWYY0MO5T.v7.QoKBRucl5val0H6', b'1');
+
+-- ---------------------------------------------------------------------
+-- 4.3 Roles de cada usuario
+-- ---------------------------------------------------------------------
+INSERT INTO usuario_rol (usuario_id, rol) VALUES
+    (1, 'USER'),
+    (2, 'USER'),
+    (3, 'USER'),
+    (3, 'ADMIN');
+
+-- ---------------------------------------------------------------------
+-- 4.4 Eventos
 -- ---------------------------------------------------------------------
 INSERT INTO evento (
     id, nombre, descripcion, videojuego, categoria, modalidad,
     pais, ciudad, ubicacion, direccion, enlace_acceso,
     fecha, hora, organizador, requisitos_participacion, informacion_inscripcion,
     foto_principal, estacionamiento, locomocion_colectiva, servicio_comida, alojamiento,
-    destacado, popular, fecha_publicacion
+    destacado, popular, fecha_publicacion, usuario_id
 ) VALUES
     (1, 'Torneo Valorant Open Santiago',
         'Torneo 5v5 abierto de Valorant con premios en efectivo y transmisión en vivo por Twitch oficial.',
@@ -209,7 +309,7 @@ INSERT INTO evento (
         'Mayor de 16 años, rango mínimo Platino en temporada vigente, periféricos propios permitidos.',
         'Inscripciones abiertas hasta el 10 de Noviembre. Cupos limitados a 16 escuadras.',
         '/img/eventos/valorant-1.jpg', b'1', b'1', b'1', b'0',
-        b'1', b'1', '2026-10-20'),
+        b'1', b'1', '2026-10-20', 1),
 
     (2, 'Copa League of Legends Online',
         'Competencia clasificatoria 5v5 en Grieta del Invocador con casters oficiales y soporte vía Discord.',
@@ -219,7 +319,7 @@ INSERT INTO evento (
         'Residencia en Latinoamérica Sur (LAS), cuenta nivel 30+ sin sanciones de conducta.',
         'Inscripción gratuita mediante formulario oficial. Cierre 2 días antes de la primera ronda.',
         '/img/eventos/lol-online.jpg', b'0', b'0', b'0', b'0',
-        b'1', b'1', '2026-10-22'),
+        b'1', b'1', '2026-10-22', 2),
 
     (3, 'Retro Gaming Fest Valparaíso',
         'Exhibición de consolas clásicas, free play, zona arcade y torneo relámpago de Street Fighter.',
@@ -229,7 +329,7 @@ INSERT INTO evento (
         'Entrada liberada para todo público. Inscripción in situ para torneo relámpago.',
         'Adhesión voluntaria en puerta. Cupos de torneo por orden de llegada.',
         '/img/eventos/retro-fest.jpg', b'0', b'1', b'1', b'0',
-        b'0', b'0', '2026-10-15'),
+        b'0', b'0', '2026-10-15', 3),
 
     (4, 'LAN Party Concepción 48 Horas',
         'Dos días seguidos de juego ininterrumpido en red local. Trae tu equipo (BYOC) o arrienda estación.',
@@ -239,7 +339,7 @@ INSERT INTO evento (
         'Ser mayor de 18 años o contar con autorización notarial. Pase de movilidad al día.',
         'Ticket participante BYOC $15.000 incluye puesto de red y credencial personalizada.',
         '/img/eventos/lan-party.jpg', b'1', b'1', b'1', b'1',
-        b'1', b'1', '2026-10-25'),
+        b'1', b'1', '2026-10-25', 1),
 
     (5, 'Meetup Desarrolladores Indie Games',
         'Encuentro con estudios chilenos, muestras jugables de prototipos y paneles sobre motores Unreal y Unity.',
@@ -249,10 +349,10 @@ INSERT INTO evento (
         'Abierto a estudiantes, desarrolladores y público general entusiasta de la industria.',
         'Registro previo por Passline para control de aforo.',
         '/img/eventos/indie-meetup.jpg', b'1', b'1', b'0', b'0',
-        b'0', b'0', '2026-10-18');
+        b'0', b'0', '2026-10-18', 2);
 
 -- ---------------------------------------------------------------------
--- 4.3 Organizadores de cada evento
+-- 4.5 Organizadores de cada evento
 -- ---------------------------------------------------------------------
 INSERT INTO evento_organizador (evento_id, nombre) VALUES
     (1, 'Gamer Chile Org'),
@@ -264,7 +364,7 @@ INSERT INTO evento_organizador (evento_id, nombre) VALUES
     (5, 'VG Chile');
 
 -- ---------------------------------------------------------------------
--- 4.4 Expositores de cada evento
+-- 4.6 Expositores de cada evento
 -- ---------------------------------------------------------------------
 INSERT INTO evento_expositor (evento_id, nombre) VALUES
     (1, 'KRÜ Esports Academy'),
@@ -278,7 +378,7 @@ INSERT INTO evento_expositor (evento_id, nombre) VALUES
     (5, 'Profesores de desarrollo');
 
 -- ---------------------------------------------------------------------
--- 4.5 Fotografías de cada evento
+-- 4.7 Fotografías iniciales de cada evento
 -- ---------------------------------------------------------------------
 INSERT INTO evento_foto (evento_id, url) VALUES
     (1, '/img/eventos/valorant-1.jpg'),
@@ -289,32 +389,43 @@ INSERT INTO evento_foto (evento_id, url) VALUES
     (5, '/img/eventos/indie-meetup.jpg');
 
 -- ---------------------------------------------------------------------
--- 4.6 Usuarios
+-- 4.8 Multimedia (fotos y videos) agregada a eventos
 -- ---------------------------------------------------------------------
--- Las contraseñas se almacenan como hash BCrypt (factor de costo 10),
--- generado por el PasswordEncoder de Spring Security. Nunca se guardan
--- en texto plano. Las credenciales de demostración están en el README.
-INSERT INTO usuario (id, username, password, activo) VALUES
-    (1, 'fernando', '$2a$10$XxLJXSHfwRFFtyN1oMDpIOEFHoGxMNrwLznEMB3RGGZKOjQOsD74u', b'1'),
-    (2, 'gina',     '$2a$10$H2snBk9k9AHjzsF3zhTz4uYfk9r9BsoG0Uq7TW6HH4OSnqGVG0qke', b'1'),
-    (3, 'admin',    '$2a$10$cJ4HMJDA5BCPS742D7qR1e./gYWYY0MO5T.v7.QoKBRucl5val0H6', b'1');
+INSERT INTO evento_media (id, evento_id, usuario_id, tipo, url, titulo, fecha_creacion) VALUES
+    (1, 1, 1, 'VIDEO', 'https://www.youtube.com/watch?v=e_E9W2vsRbQ', 'Tráiler oficial de la temporada Valorant', '2026-10-21 15:00:00'),
+    (2, 2, 2, 'VIDEO', 'https://www.youtube.com/watch?v=aR-KAldshAE', 'Cinemática clasificatoria League of Legends', '2026-10-23 19:30:00');
 
 -- ---------------------------------------------------------------------
--- 4.7 Roles de cada usuario
+-- 4.9 Comentarios de eventos
 -- ---------------------------------------------------------------------
-INSERT INTO usuario_rol (usuario_id, rol) VALUES
-    (1, 'USER'),
-    (2, 'USER'),
-    (3, 'USER'),
-    (3, 'ADMIN');
+INSERT INTO evento_comentario (id, evento_id, usuario_id, contenido, fecha_creacion) VALUES
+    (1, 1, 2, '¡Excelente organización el año pasado! Ya armamos nuestra escuadra para participar.', '2026-10-22 11:15:00'),
+    (2, 1, 3, 'Recuerden llegar 30 minutos antes para validar periféricos y check-in.', '2026-10-22 14:40:00'),
+    (3, 2, 1, 'Buenísimo que sea online con casters en vivo, nos vemos en Discord.', '2026-10-24 20:10:00');
+
+-- ---------------------------------------------------------------------
+-- 4.10 Valoraciones de eventos
+-- ---------------------------------------------------------------------
+INSERT INTO evento_valoracion (id, evento_id, usuario_id, puntuacion, fecha_actualizacion) VALUES
+    (1, 1, 1, 5, '2026-10-22 10:00:00'),
+    (2, 1, 2, 4, '2026-10-22 11:20:00'),
+    (3, 2, 2, 5, '2026-10-24 18:00:00');
+
+-- ---------------------------------------------------------------------
+-- 4.11 Eventos compartidos en el sitio web
+-- ---------------------------------------------------------------------
+INSERT INTO evento_compartido (id, evento_id, usuario_id, canal, mensaje, enlace_compartido, fecha_compartido) VALUES
+    (1, 1, 1, 'SITIO_WEB', '¡Quedan pocos cupos para el Torneo Valorant Open Santiago! Súmate con tu equipo.', 'http://localhost:8080/eventos/1', '2026-10-22 12:00:00'),
+    (2, 2, 2, 'SITIO_WEB', 'Inscripción gratuita para la Copa LoL Online. ¡No se la pierdan!', 'http://localhost:8080/eventos/2', '2026-10-24 21:00:00');
 
 
 -- =====================================================================
 --  5. VERIFICACIÓN (opcional)
 -- =====================================================================
--- Resultado esperado: 4 banners, 5 eventos, 3 usuarios.
---
--- SELECT COUNT(*) AS banners  FROM banner;
--- SELECT COUNT(*) AS eventos  FROM evento;
--- SELECT COUNT(*) AS usuarios FROM usuario;
--- SELECT u.username, r.rol FROM usuario u JOIN usuario_rol r ON r.usuario_id = u.id;
+-- SELECT COUNT(*) AS banners      FROM banner;
+-- SELECT COUNT(*) AS eventos      FROM evento;
+-- SELECT COUNT(*) AS usuarios     FROM usuario;
+-- SELECT COUNT(*) AS multimedia   FROM evento_media;
+-- SELECT COUNT(*) AS comentarios  FROM evento_comentario;
+-- SELECT COUNT(*) AS valoraciones FROM evento_valoracion;
+-- SELECT COUNT(*) AS compartidos  FROM evento_compartido;
