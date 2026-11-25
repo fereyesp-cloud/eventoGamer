@@ -85,6 +85,17 @@ bash
 
 La aplicación queda disponible en http://localhost:8080.
 
+# 🐳 Ejecución con Docker Compose (App + MySQL)
+
+1. Copiar `.env.example` a `.env` y definir contraseñas seguras (`DB_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `SEED_USER_PASSWORD`, `SEED_ADMIN_PASSWORD`).
+2. Levantar ambos contenedores (MySQL 8.4 + Spring Boot):
+
+```bash
+docker compose up --build
+```
+
+La aplicación quedará disponible en `http://localhost:8080` (o en el puerto definido en `APP_PORT`). Los datos de MySQL y los archivos subidos (`/app/uploads`) se persisten en volúmenes Docker.
+
 # 👤 Usuarios de prueba
 Usuario	Contraseña	Roles
 fernando	Gamer2026!	USER
@@ -124,6 +135,14 @@ POST	/api/eventos/{id}/comentarios	Publica un comentario en el evento (`contenid
 DELETE	/api/eventos/{id}/comentarios/{comentarioId}	Elimina un comentario (solo autor o `ADMIN`)
 GET	/api/eventos/{id}/valoraciones	Retorna promedio, total, valoración del usuario autenticado y listado
 POST	/api/eventos/{id}/valoraciones	Crea o actualiza la valoración del usuario (1 a 5 estrellas)
+GET	/api/admin/usuarios	[Solo ROLE_ADMIN] Lista todos los usuarios y administradores desde MySQL (sin exponer contraseñas)
+GET	/api/admin/usuarios/{id}	[Solo ROLE_ADMIN] Consulta el detalle de un usuario por ID
+POST	/api/admin/usuarios	[Solo ROLE_ADMIN] Crea un nuevo usuario del sitio o administrador con hash BCrypt
+PUT	/api/admin/usuarios/{id}	[Solo ROLE_ADMIN] Actualiza roles (`USER`/`ADMIN`), estado activo o contraseña
+PATCH	/api/admin/usuarios/{id}/estado	[Solo ROLE_ADMIN] Activa o desactiva una cuenta (`{"activo": true|false}`)
+DELETE	/api/admin/usuarios/{id}	[Solo ROLE_ADMIN] Elimina un usuario sin actividad asociada (protege al propio admin y al último admin activo)
+
+Además, el panel web privado `/admin/usuarios` (solo `ROLE_ADMIN`) permite administrar las cuentas desde el navegador.
 
 El token se envía en la cabecera:
 

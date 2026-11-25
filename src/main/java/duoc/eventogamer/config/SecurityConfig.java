@@ -2,10 +2,12 @@ package duoc.eventogamer.config;
 
 import duoc.eventogamer.jwt.JwtAuthenticationEntryPoint;
 import duoc.eventogamer.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -45,15 +47,28 @@ public class SecurityConfig {
                 .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'"))
             )
 
-            // 401 en JSON cuando falta o es inválido el token
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            // 401 en JSON cuando falta o es inválido el token; 403 en JSON si faltan permisos
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                            "{\"status\":403,\"error\":\"Forbidden\","
+                            + "\"message\":\"No tienes permisos de administrador para acceder a este recurso\"}"
+                    );
+                })
+            )
 
             .authorizeHttpRequests(auth -> auth
                 // [Pública] Login: emite el token JWT
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 // [Pública] Inicio y búsqueda resumida de eventos
                 .requestMatchers(HttpMethod.GET, "/api/inicio", "/api/eventos").permitAll()
-                // [Privada] Detalle de eventos y todo lo demás requiere JWT
+                // [Privada - ADMIN] Gestión de usuarios administradores y usuarios del sitio
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // [Privada] Detalle de eventos, interacciones y todo lo demás requiere JWT
                 .anyRequest().authenticated()
             )
 
@@ -92,7 +107,9 @@ public class SecurityConfig {
                 // Páginas públicas y recursos estáticos
                 .requestMatchers("/", "/eventos", "/login", "/registro", "/error",
                                  "/css/**", "/img/**", "/js/**", "/fonts/**").permitAll()
-                // Todo lo demás (detalle de evento, perfil) requiere login
+                // [Privada - ADMIN] Gestión de usuarios administradores y del sitio
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // Todo lo demás (detalle de evento, compartidos, perfil) requiere login
                 .anyRequest().authenticated()
             )   
 

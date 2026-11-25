@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 @Service
 public class MediaStorageService {
 
-    private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024; // 10 MB
+    private static final long MAX_FILE_SIZE_BYTES = 7L * 1024 * 1024; // 7 MB
 
     private static final Set<String> FOTO_EXTENSIONES = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final Set<String> VIDEO_EXTENSIONES = Set.of("mp4", "webm");
@@ -112,7 +112,7 @@ public class MediaStorageService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debes seleccionar un archivo para subir");
         }
         if (archivo.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido de 10 MB");
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido de 7 MB");
         }
         if (tipo == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debes indicar si el archivo es FOTO o VIDEO");
