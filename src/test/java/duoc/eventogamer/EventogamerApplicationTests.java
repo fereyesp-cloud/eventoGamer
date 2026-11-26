@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -240,5 +241,81 @@ class EventogamerApplicationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.miValoracion", is(5)))
                 .andExpect(jsonPath("$.promedio", greaterThan(0.0)));
+    }
+
+    @Test
+    @DisplayName("[API Privada - ADMIN] /api/admin/usuarios exige JWT con ROLE_ADMIN (401 sin token, 403 con USER)")
+    void apiAdminUsuariosProtegidaPorRolAdmin() throws Exception {
+        // Sin token -> 401
+        mockMvc.perform(get("/api/admin/usuarios"))
+                .andExpect(status().isUnauthorized());
+
+        // Con token de usuario normal (fernando) -> 403 Forbidden
+        MvcResult userLogin = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"fernando\",\"password\":\"Gamer2026!\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String userToken = JsonPath.read(userLogin.getResponse().getContentAsString(), "$.token");
+
+        mockMvc.perform(get("/api/admin/usuarios")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", is("Forbidden")));
+
+        // Con token de administrador (admin) -> 200 OK y lista de usuarios desde MySQL
+        MvcResult adminLogin = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"Admin2026!\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String adminToken = JsonPath.read(adminLogin.getResponse().getContentAsString(), "$.token");
+
+        mockMvc.perform(get("/api/admin/usuarios")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(3))))
+                .andExpect(jsonPath("$[*].username", hasItems("fernando", "gina", "admin")));
+    }
+
+    @Test
+    @DisplayName("[Frontend Web] Vistas públicas cargan 200 y privadas exigen login / rol ADMIN")
+    void frontendWebRutasPublicasYPrivadas() throws Exception {
+        // Vistas públicas
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"));
+        mockMvc.perform(get("/eventos"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("eventos"));
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("login"));
+        mockMvc.perform(get("/registro"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("registro"));
+
+        // Rutas privadas redirigen a /login si no hay sesión
+        mockMvc.perform(get("/eventos/1"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/compartidos"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/admin/usuarios"))
+                .andExpect(status().is3xxRedirection());
+
+        // Usuario autenticado (USER) accede a detalle y compartidos, pero recibe 403 en /admin/usuarios
+        mockMvc.perform(get("/eventos/1").with(user("fernando").roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("evento-detalle"));
+        mockMvc.perform(get("/compartidos").with(user("fernando").roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("compartidos"));
+        mockMvc.perform(get("/admin/usuarios").with(user("fernando").roles("USER")))
+                .andExpect(status().isForbidden());
+
+        // Administrador (ADMIN) accede al panel de gestión de usuarios
+        mockMvc.perform(get("/admin/usuarios").with(user("admin").roles("USER", "ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin-usuarios"));
     }
 }

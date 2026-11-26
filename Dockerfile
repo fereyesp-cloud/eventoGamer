@@ -8,7 +8,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:resolve -B
 
-# Copia del código fuente y empaquetado del archivo JAR (omitiendo tests para agilizar el build)
+# Copia del código fuente y empaquetado del archivo JAR
 COPY src ./src
 RUN mvn clean package -DskipTests
 
@@ -19,11 +19,15 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Medida de seguridad (Calidad y Seguridad): no ejecutar la app como root
-RUN addgroup -S gamergroup && adduser -S gameruser -G gamergroup
-USER gameruser
+# y preparar carpeta de archivos multimedia con permisos solo para el usuario de la app
+RUN addgroup -S gamergroup && adduser -S gameruser -G gamergroup \
+    && mkdir -p /app/uploads \
+    && chown -R gameruser:gamergroup /app
 
 # Copiamos únicamente el JAR empaquetado desde la etapa de construcción
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder --chown=gameruser:gamergroup /app/target/*.jar app.jar
+
+USER gameruser
 
 # Exponemos el puerto estándar de Spring Boot
 EXPOSE 8080

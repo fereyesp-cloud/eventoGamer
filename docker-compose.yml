@@ -1,9 +1,52 @@
 services:
+  mysql:
+    image: mysql:8.4
+    container_name: eventogamer-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: eventogamer
+      MYSQL_USER: ${DB_USER:-eventogamer_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env o variables de entorno}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env o variables de entorno}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - eventogamer-net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   eventogamer:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: eventogamer-container
-    ports:
-      - "8080:8080"
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/eventogamer?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USER: ${DB_USER:-eventogamer_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env o variables de entorno}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:?Define SEED_USER_PASSWORD en .env o variables de entorno}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Define SEED_ADMIN_PASSWORD en .env o variables de entorno}
+      UPLOAD_DIR: /app/uploads
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - eventogamer-net
+
+volumes:
+  mysql_data:
+  uploads_data:
+
+networks:
+  eventogamer-net:
+    driver: bridge

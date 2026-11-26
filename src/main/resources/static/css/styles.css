@@ -642,3 +642,52 @@ fieldset label { display: inline-flex; align-items: center; gap: 6px; margin: 6p
     margin: 8px 0;
     font-size: 1.2rem;
 }
+
+/* ========== Panel de administración de usuarios ========== */
+.checkbox-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tabla-responsive {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.tabla-admin {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    overflow: hidden;
+}
+
+.tabla-admin th, .tabla-admin td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--borde);
+}
+
+.tabla-admin th {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: var(--primario);
+    background: rgba(0, 229, 255, 0.08);
+}
+
+.acciones-tabla {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.badge-inactivo {
+    background: rgba(255, 77, 109, 0.15);
+    border: 1px solid var(--error);
+    color: var(--error);
+}

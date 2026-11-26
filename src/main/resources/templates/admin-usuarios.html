@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - Eventos Gamer</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container">
+        <h1>Gestión de usuarios y administradores</h1>
+        <p class="lead">Administra las cuentas del sitio, asigna permisos de administrador y controla el estado de acceso.</p>
+
+        <div th:if="${mensajeExito != null}" class="alert alert-success" role="status" th:text="${mensajeExito}">
+            Acción completada.
+        </div>
+        <div th:if="${mensajeError != null}" class="alert alert-error" role="alert" th:text="${mensajeError}">
+            Error al ejecutar la acción.
+        </div>
+
+        <section class="panel-interaccion">
+            <h2>Crear nuevo usuario o administrador</h2>
+            <form th:action="@{/admin/usuarios}" method="post">
+                <div class="form-grid">
+                    <div>
+                        <label for="nuevo-username">Nombre de usuario:</label>
+                        <input type="text" id="nuevo-username" name="username" required
+                               minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]{3,20}"
+                               placeholder="Ej. moderador_cl">
+                    </div>
+                    <div>
+                        <label for="nuevo-password">Contraseña inicial (mín. 8 caracteres):</label>
+                        <input type="password" id="nuevo-password" name="password" required
+                               minlength="8" maxlength="64" autocomplete="new-password"
+                               placeholder="Contraseña segura">
+                    </div>
+                </div>
+                <div>
+                    <label class="checkbox-inline">
+                        <input type="checkbox" id="nuevo-es-admin" name="esAdmin" value="true">
+                        Asignar rol de Administrador (ADMIN)
+                    </label>
+                </div>
+                <button type="submit" class="btn">Crear cuenta</button>
+            </form>
+        </section>
+
+        <section class="detalle-seccion">
+            <h2>Usuarios registrados (<span th:text="${#lists.size(usuarios)}">0</span>)</h2>
+
+            <div class="tabla-responsive">
+                <table class="tabla-admin">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Roles</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${usuarios}">
+                            <td th:text="${u.id}">1</td>
+                            <td>
+                                <strong th:text="${u.username}">usuario</strong>
+                                <span th:if="${u.username == adminActual}" class="media-meta"> (tú)</span>
+                            </td>
+                            <td>
+                                <span th:each="r : ${u.roles}"
+                                      th:class="${r == 'ADMIN'} ? 'badge badge-categoria' : 'badge badge-modalidad'"
+                                      th:text="${r}">USER</span>
+                            </td>
+                            <td>
+                                <span th:class="${u.activo} ? 'badge badge-juego' : 'badge badge-inactivo'"
+                                      th:text="${u.activo} ? 'Activo' : 'Inactivo'">Activo</span>
+                            </td>
+                            <td class="acciones-tabla">
+                                <form th:if="${u.username != adminActual}"
+                                      th:action="@{/admin/usuarios/{id}/rol-admin(id=${u.id})}"
+                                      method="post" class="inline-form">
+                                    <input type="hidden" name="otorgar" th:value="${!u.administrador}">
+                                    <button type="submit" class="btn-mini btn-secondary"
+                                            th:text="${u.administrador} ? 'Quitar Admin' : 'Hacer Admin'">Rol</button>
+                                </form>
+
+                                <form th:if="${u.username != adminActual}"
+                                      th:action="@{/admin/usuarios/{id}/estado(id=${u.id})}"
+                                      method="post" class="inline-form">
+                                    <input type="hidden" name="activo" th:value="${!u.activo}">
+                                    <button type="submit" class="btn-mini"
+                                            th:text="${u.activo} ? 'Desactivar' : 'Activar'">Estado</button>
+                                </form>
+
+                                <form th:if="${u.username != adminActual}"
+                                      th:action="@{/admin/usuarios/{id}/eliminar(id=${u.id})}"
+                                      method="post" class="inline-form">
+                                    <button type="submit" class="btn-mini btn-peligro">Eliminar</button>
+                                </form>
+
+                                <span th:if="${u.username == adminActual}" class="media-meta">Sesión actual</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
